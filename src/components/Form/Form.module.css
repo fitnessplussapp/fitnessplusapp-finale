@@ -1,0 +1,360 @@
+/* src/components/Form/Form.module.css */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Form grupları arası boşluk */
+}
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* İkili grid grup (Fiyat/Süre) */
+.gridGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+/* Mobilde alt alta düşsün (Bu kural zaten vardı) */
+@media (max-width: 500px) {
+  .gridGroup {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inputGroup label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #A0A0A0;
+}
+.inputGroup small {
+  font-size: 0.8rem;
+  color: #888;
+}
+.inputWrapper {
+  position: relative;
+}
+.inputIcon {
+  position: absolute;
+  left: 1rem; 
+  top: 50%;
+  transform: translateY(-50%);
+  color: #707070;
+  z-index: 10;
+}
+.input {
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 3rem;
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box; /* Padding'in genişliği etkilememesi için */
+}
+.input:focus {
+  outline: none;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+.input:disabled {
+  background-color: #252525;
+  color: #777;
+  cursor: not-allowed;
+}
+
+/* Şifre gösterme ikonu */
+.passwordIcon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #707070;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+.passwordIcon:hover {
+  color: #FFFFFF;
+}
+
+/* Checkbox (Diyetisyen Desteği) */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #A0A0A0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+.checkboxLabel:hover {
+  background-color: #222;
+}
+.checkboxLabel input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: #121212;
+  border: 2px solid #555;
+  border-radius: 5px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+.checkboxLabel input[type="checkbox"]:checked {
+  background-color: #D4AF37;
+  border-color: #D4AF37;
+}
+.checkboxLabel input[type="checkbox"]:checked::after {
+  content: '✔';
+  color: #121212;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Form Buton Alanı */
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #2A2A2A;
+  padding-top: 1.5rem;
+}
+
+.submitButton {
+  flex-grow: 1; /* Butonlar eşit genişlesin */
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.submitButton.primary {
+  background-color: #D4AF37;
+  color: #121212;
+}
+.submitButton.primary:hover:not(:disabled) {
+  background-color: #E6C25E;
+}
+/* İptal Butonu */
+.submitButton.secondary {
+  background-color: #2A2A2A;
+  color: #A0A0A0;
+  border: 1px solid #333;
+}
+.submitButton.secondary:hover:not(:disabled) {
+  background-color: #333;
+  color: #FFF;
+}
+/* Silme Butonu */
+.submitButton.danger {
+  background-color: #ef4444;
+  color: #FFFFFF;
+}
+.submitButton.danger:hover:not(:disabled) {
+  background-color: #f87171;
+}
+
+.submitButton:disabled {
+  background-color: #505050;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  color: #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Form İçi Özet Kutusu (Finansal/Tarih) */
+.formSummaryBox {
+  display: flex;
+  justify-content: space-around;
+  background-color: #111;
+  border: 1px dashed #333;
+  border-radius: 8px;
+  padding: 1rem;
+  gap: 1rem;
+}
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.summaryItem span {
+  font-size: 0.85rem;
+  color: #888;
+}
+.summaryItem strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #D4AF37; /* Varsayılan Vurgu Rengi */
+}
+/* Koç Payı için özel renk */
+.summaryItem.positive strong {
+  color: #22c55e;
+}
+
+
+/* ======================================== */
+/* Birleşik Giriş (Compound Input) Stilleri */
+/* ======================================== */
+
+.compoundInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.compoundInputWrapper .input {
+  flex-grow: 1;
+  /* UI KAYMA DÜZELTMESİ: width: auto olmalı ki flex-grow çalışsın */
+  width: auto; 
+  /* YENİ: Ekran çok daraldığında bile 80px'in altına düşmesini engelle */
+  min-width: 80px; 
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.compoundInputWrapper .input:focus {
+  z-index: 10;
+  position: relative;
+}
+
+/* Segmentli Buton Grubu Stilleri (TL / %) */
+.typeToggleGroup {
+  display: flex;
+  flex-shrink: 0; 
+  align-items: center;
+  background-color: #121212;
+  border: 1px solid #333;
+  border-left: none;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  overflow: hidden; 
+  transition: all 0.3s ease;
+}
+
+.toggleButton {
+  padding: 0.9rem 1rem;
+  background-color: transparent;
+  border: none;
+  border-left: 1px solid #333; 
+  color: #A0A0A0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  line-height: 1; 
+}
+.toggleButton:first-child {
+  border-left: none; 
+}
+.toggleButton:hover:not(:disabled) {
+  background-color: #252525;
+  color: #FFFFFF;
+}
+.toggleButton:disabled {
+  color: #555;
+  cursor: not-allowed;
+}
+
+/* Aktif (Seçili) Buton Stili */
+.toggleActive {
+  background-color: #D4AF37;
+  color: #121212;
+}
+.toggleActive:hover:not(:disabled) {
+  background-color: #E6C25E;
+  color: #121212;
+}
+
+/* Odaklanma (Focus) Stilleri */
+.compoundInputWrapper .input:focus + .typeToggleGroup,
+.typeToggleGroup:focus-within {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  z-index: 10;
+  position: relative;
+}
+.compoundInputWrapper .input:focus + .typeToggleGroup {
+    border-left: none;
+}
+
+/* Chrome'da sayı input'undaki okları kaldır */
+.compoundInputWrapper input::-webkit-outer-spin-button,
+.compoundInputWrapper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox'ta sayı input'undaki okları kaldır */
+.compoundInputWrapper input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* ======================================== */
+/* YENİ: Mobil Uyumluluk (500px altı)     */
+/* ======================================== */
+@media (max-width: 500px) {
+
+  /* Form butonlarını (İptal/Kaydet) alt alta diz */
+  .formActions {
+    flex-direction: column-reverse; /* Önce birincil (Kaydet) butonu */
+  }
+
+  /* Finansal özet kutusunu (Şirket/Koç Payı) alt alta diz */
+  .formSummaryBox {
+    flex-direction: column;
+    align-items: stretch; /* Kenarlara yasla */
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Finansal özet maddelerini mobilde daha okunaklı yap */
+  .summaryItem {
+    flex-direction: row; /* Yan yana (Metin: Değer) */
+    justify-content: space-between; /* Aralarını aç */
+    align-items: center;
+    width: 100%; /* Tam genişlik kaplasın */
+  }
+
+  .summaryItem span {
+    font-size: 0.95rem; /* Biraz büyüt */
+  }
+  .summaryItem strong {
+    font-size: 1.1rem; 
+  }
+}

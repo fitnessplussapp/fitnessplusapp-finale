@@ -1,0 +1,55 @@
+/* src/global.css */
+
+/* CSS Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: #E0E0E0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Arka plan ayarları globalden (login'e özel) kaldırıldı. */
+  /* Artık her sayfa kendi arka planını yönetebilir. */
+  /* Panel için varsayılan arka planı ayarlıyoruz. */
+  background-color: #121212;
+  
+  min-height: 100vh;
+  height: 100%;
+}
+
+/* GİRİŞ SAYFASI İÇİN ÖZEL ARKA PLAN */
+/* Eğer giriş sayfasındaki arka planı korumak istiyorsak,
+  bu kodu Login.module.css içine :global(body) olarak taşımalıyız
+  veya App.tsx'te URL'e göre body class'ı değiştirmeliyiz.
+  ŞİMDİLİK BASİT TUTMAK İÇİN GİRİŞİN ARKA PLANINI DA SİYAHA ÇEVİRDİK.
+  (İsterseniz bir sonraki adımda Login'e özel arka planı geri getirebiliriz.)
+*/
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  /* justify-content ve align-items kaldırıldı. 
+    Bunlar GİRİŞ ekranı içindi. Artık panel tam sayfa olacak.
+  */
+  display: flex; /* Sadece flex kalsın */
+}
+
+@media (max-width: 768px) {
+  body {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  #root {
+    min-height: 100%;
+  }
+}

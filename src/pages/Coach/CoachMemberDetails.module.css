@@ -1,0 +1,276 @@
+/* src/pages/Coach/CoachMemberDetails.module.css */
+
+.detailPage {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 1. Başlık ve Geri Butonu */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #2A2A2A;
+  flex-wrap: wrap; /* Mobilde alt alta gelmesi için */
+  gap: 1rem;
+}
+.memberName {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+}
+.memberMeta {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+/* DURUM RENKLERİ */
+.statusActive {
+  color: #2ecc71;
+  font-weight: 600;
+}
+.statusPassive {
+  color: #e74c3c;
+  font-weight: 600;
+}
+.statusPending { /* BEYAZ EKRAN ÇÖZÜMÜ */
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2A2A2A;
+  color: #E0E0E0;
+  border: 1px solid #444;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex-shrink: 0; /* Küçülmesin */
+}
+.backButton:hover {
+  background-color: #333;
+  border-color: #D4AF37;
+}
+
+/* 2. Üst Kartlar */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.statCard {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.statTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #A0A0A0;
+  margin-bottom: 0.75rem;
+}
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 1rem;
+}
+.statFooter {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 1rem;
+  display: block;
+}
+.dietitianStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-top: 1.5rem;
+}
+.progressBar {
+  height: 8px;
+  background-color: #2A2A2A;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 3. Paket Bölümü */
+.packageSection {
+  margin-top: 2rem;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #E0E0E0;
+}
+.packageList {
+  display: grid;
+  gap: 1.5rem;
+}
+.noPackages {
+  color: #888;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* 4. Paket Kartı (Tümü için temel) */
+.packageCard {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+.packageCard:hover {
+  transform: translateY(-4px);
+  border-color: #555;
+}
+.packageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.packageTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.packageDate {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+.packageBody {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.packagePrice {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #E0E0E0;
+}
+.coachEarning {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2ecc71; /* Yeşil kazanç */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.packageSession {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  background-color: #222;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.packageFooter {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2A2A2A;
+}
+
+/* 5. Ödeme Durumları */
+.paid {
+  color: #2ecc71;
+  font-weight: 500;
+}
+.pending {
+  color: #f39c12;
+  font-weight: 500;
+}
+
+/* 6. PAKET TİPLERİ (İSTEĞİNİZİN ÇÖZÜMÜ) */
+
+/* A. Onay Bekleyen Paket */
+.pendingCard {
+  border-left: 4px solid #f39c12; /* Turuncu uyarı çizgisi */
+  background-color: #2a2a2a;
+}
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f39c12;
+  color: #111;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+.pendingCard .packageTitle {
+  color: #f39c12;
+}
+
+/* B. Mevcut (Altın) Paket */
+.currentPackageCard {
+  border: 1px solid #D4AF37;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+}
+.currentPackageCard .packageTitle {
+  color: #D4AF37;
+}
+
+/* Yükleme/Hata Durumları */
+.loadingContainer, .errorContainer {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #A0A0A0;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+}
+.errorContainer {
+  color: #e74c3c;
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

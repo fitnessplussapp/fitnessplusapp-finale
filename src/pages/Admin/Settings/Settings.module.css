@@ -1,0 +1,215 @@
+/* src/pages/Admin/Settings/Settings.module.css */
+
+.settingsPage {
+  animation: fadeIn 0.5s ease-out;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-size: 1.5rem; 
+  font-weight: 600; 
+  color: #E0E0E0;
+  margin-top: 2.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.sectionTitle:first-of-type {
+  margin-top: 0.5rem;
+}
+.sectionSubtitle {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* YENİ: Bilgi Kutusu (Altın Renkli) */
+.infoBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: rgba(212, 175, 55, 0.05);
+  border: 1px solid #5C450D;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  line-height: 1.6;
+}
+.infoBox strong {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #D4AF37;
+  font-weight: 600;
+}
+.infoBox svg {
+  flex-shrink: 0;
+}
+.infoBox p {
+  margin: 0;
+  padding-left: 26px; /* İkonla hizala */
+}
+
+/* Yüklenme (Loader) Stili */
+.loaderContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+  color: #A0A0A0;
+}
+.loader {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 1. Limit Paneli Stilleri */
+.limitGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+.progressItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.progressLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #E0E0E0;
+}
+/* Okuma/Yazma alt başlıkları */
+.progressItem:nth-child(2) .progressLabel,
+.progressItem:nth-child(3) .progressLabel {
+  padding-left: 1rem;
+  font-size: 0.8rem;
+  color: #A0A0A0;
+}
+
+.progressValue {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #A0A0A0;
+}
+.progressBarBg {
+  width: 100%;
+  height: 8px;
+  background-color: #121212;
+  border: 1px solid #2A2A2A;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progressBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+/* Renkler */
+.barBlue { /* YENİ: Okuma için */
+  background-color: #3B82F6;
+}
+.barGold { 
+  background-color: #D4AF37;
+}
+.barOrange {
+  background-color: #f39c12;
+}
+.barRed {
+  background-color: #e74c3c;
+}
+
+/* 2. Python Yedekleme Kutusu Stilleri */
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #D4AF37;
+  color: #121212;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+}
+.downloadButton:hover {
+  background-color: #E6C25E;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
+}
+
+/* 3. Sınırlı İndirme Stilleri */
+.alertBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: rgba(239, 68, 68, 0.05);
+  border: 1px solid #5C0D0D;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+.alertBox strong { color: #EF4444; }
+.alertBox svg { color: #EF4444; flex-shrink: 0; margin-top: 3px; }
+
+.limitedGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+.limitedButton {
+  background-color: #2A2A2A;
+  border: 1px solid #444;
+  color: #E0E0E0;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+}
+.limitedButton:hover {
+  background-color: #333;
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+/* Medya Sorguları */
+@media (min-width: 768px) {
+  .limitGrid {
+    grid-template-columns: 1fr;
+  }
+  .limitedGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Animasyon */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

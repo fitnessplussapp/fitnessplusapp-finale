@@ -1,0 +1,709 @@
+/* src/pages/Admin/Dashboard/Dashboard.module.css */
+
+.dashboard {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 1. İSTATİSTİK KARTLARI TEMELİ */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr; 
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+
+/* === 2. "KOYU LÜKS HERO" KARTI === */
+.heroCard {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #2E2207 0%, #4A370A 100%);
+  border: 1px solid #5C450D;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.heroCard:hover {
+  transform: translateY(-5px);
+  border-color: #D4AF37;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.1);
+}
+.heroIconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid #D4AF37;
+}
+.heroIcon {
+  color: #D4AF37;
+  font-size: 24px;
+}
+.heroText {
+  display: flex;
+  flex-direction: column;
+}
+.heroLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #A0A0A0;
+}
+.heroValue {
+  font-size: 1.75rem; 
+  font-weight: 700;
+  color: #E0E0E0;
+  line-height: 1.2;
+}
+
+
+/* === 3. YARDIMCI KARTLAR (3'lü Grid) === */
+
+.secondaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; 
+  gap: 0.75rem;
+}
+.statCard {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 110px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  border-color: #555;
+}
+.cardHeader { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.iconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+.cardIcon {
+  color: #D4AF37;
+  font-size: 16px;
+}
+.cardLabel { 
+  font-size: 0.8rem;
+  font-weight: 500; 
+  color: #A0A0A0;
+}
+.cardValue { 
+  font-size: 1.5rem; 
+  font-weight: 600; 
+  text-align: left;
+  margin-top: 0.25rem; 
+  color: #FFFFFF;
+}
+
+.glowingCard {
+  border-color: #D4AF37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+  animation: glow 1.5s infinite alternate;
+}
+@keyframes glow {
+  from {
+    border-color: #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+  }
+  to {
+    border-color: #E6C25E;
+    box-shadow: 0 0 20px rgba(230, 194, 94, 0.5);
+  }
+}
+
+
+/* === 4. BÖLÜM BAŞLIĞI ve ALANI === */
+.section {
+  margin-top: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #2A2A2A;
+}
+
+/* Platforma Genel Bakış Grid'i */
+.overviewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; 
+  gap: 1rem;
+}
+
+.overviewCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.overviewIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid #5C450D;
+  color: #D4AF37;
+}
+.overviewText {
+  display: flex;
+  flex-direction: column;
+}
+.overviewLabel {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #A0A0A0;
+}
+.overviewValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  line-height: 1.2;
+}
+.overviewTotal {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #888;
+}
+
+/* Hızlı Eylemler Grid'i */
+.quickActionsGrid {
+  display: grid;
+  grid-template-columns: 1fr; 
+  gap: 1rem;
+}
+
+.actionCard {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+.actionCard:hover {
+  border-color: #D4AF37;
+  background-color: #202020;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+.actionIconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid #5C450D;
+  color: #D4AF37;
+}
+.actionText {
+  display: flex;
+  flex-direction: column;
+}
+.actionText strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  margin-bottom: 0.25rem;
+}
+.actionText span {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  line-height: 1.4;
+}
+
+
+/* === MEDYA SORGULARI === */
+
+@media (min-width: 768px) {
+  .statsGrid { gap: 1.5rem; }
+  .secondaryGrid { gap: 1rem; }
+  .heroValue { font-size: 2rem; }
+  .cardValue { font-size: 1.75rem; }
+  .quickActionsGrid { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .actionCard:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .heroCard { grid-column: 1 / 2; grid-row: 1 / 2; min-height: 110px; }
+  .heroValue { font-size: 2.25rem; }
+  .secondaryGrid { display: contents; }
+  .statCard { grid-row: 1 / 2; }
+  .cardValue { font-size: 1.75rem; }
+  .overviewGrid { grid-template-columns: 1fr 1fr; }
+  .quickActionsGrid { grid-template-columns: 1fr 1fr 1fr; }
+  .actionCard:last-child:nth-child(odd) { grid-column: auto; }
+}
+
+/* === Kalan Stiller === */
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-top: 0.25rem;
+  height: 24px;
+}
+.heroValue .spinner { height: 36px; }
+.errorBox {
+  color: #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  grid-column: 1 / -1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+/* ======================================== */
+/* === FİLTRE STİLLERİ (MOBİL UYUMLU) === */
+/* ======================================== */
+
+.filterContainer {
+  display: flex;
+  flex-direction: column; 
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.presetButtonContainer {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap; 
+}
+
+.presetButton {
+  background-color: #2A2A2A;
+  border: 1px solid #333;
+  color: #A0A0A0;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-grow: 1; 
+}
+@media (min-width: 480px) {
+  .presetButton {
+    flex-grow: 0; 
+  }
+}
+
+.presetButton:hover:not(:disabled) {
+  background-color: #333;
+  color: #FFF;
+}
+.presetButton.active {
+  background-color: #D4AF37;
+  border-color: #D4AF37;
+  color: #121212;
+  font-weight: 600;
+}
+.presetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filterInputs {
+  display: grid;
+  grid-template-columns: 1fr; 
+  gap: 1rem;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
+}
+
+.filterGroup label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #A0A0A0;
+}
+
+.dateInputWrapper {
+  position: relative;
+}
+
+.dateInputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #707070;
+  pointer-events: none;
+}
+
+.dateInput {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem; 
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #E0E0E0;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box; 
+  appearance: none;
+  -webkit-appearance: none;
+}
+.dateInput:focus {
+  outline: none;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+.dateInput:disabled {
+  background-color: #252525;
+  cursor: not-allowed;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="15" viewBox="0 0 24 24" fill="none" stroke="%23707070" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') no-repeat;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+.dateInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* === SELECT (DROPDOWN) STİLLERİ === */
+.selectInputWrapper {
+  position: relative;
+}
+.selectInputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #707070;
+  pointer-events: none;
+}
+.selectInput {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem; 
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #E0E0E0;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23707070" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px;
+  padding-right: 2.5rem; 
+}
+.selectInput:focus {
+  outline: none;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+.selectInput:disabled {
+  background-color: #252525;
+  cursor: not-allowed;
+}
+/* ========================================= */
+
+
+/* Tablet (768px): Butonlar ve inputlar yan yana */
+@media (min-width: 768px) {
+  .filterContainer {
+    flex-direction: row; 
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; 
+  }
+  .filterInputs {
+    grid-template-columns: 1fr 1fr; 
+    gap: 1rem;
+    flex-shrink: 0; 
+  }
+}
+
+/* Geniş Ekran (1024px): Input genişliklerini sabitle */
+@media (min-width: 1024px) {
+  .filterInputs {
+     grid-template-columns: 200px 200px 200px; 
+  }
+}
+
+/* ======================================== */
+/* === REACT-DATEPICKER STİLLERİ === */
+/* ======================================== */
+:global(.react-datepicker-wrapper) {
+  width: 100%;
+}
+:global(.react-datepicker__input-container) {
+  width: 100%;
+}
+:global(.react-datepicker) {
+  font-family: 'Poppins', sans-serif !important;
+  background-color: #1A1A1A;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+  color: #E0E0E0;
+}
+:global(.react-datepicker__header) {
+  background-color: #2A2A2A;
+  border-bottom: 1px solid #333;
+  padding-top: 1rem;
+}
+:global(.react-datepicker__navigation) {
+  top: 1rem;
+}
+:global(.react-datepicker__navigation-icon::before) {
+  border-color: #E0E0E0;
+  border-width: 2px 2px 0 0;
+}
+:global(.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before) {
+  border-color: #D4AF37;
+}
+:global(.react-datepicker__current-month) {
+  color: #E0E0E0;
+  font-weight: 600;
+  font-size: 1rem;
+  padding-bottom: 0.5rem;
+}
+:global(.react-datepicker__day-name) {
+  color: #A0A0A0;
+  font-weight: 500;
+}
+:global(.react-datepicker__day) {
+  color: #E0E0E0;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+:global(.react-datepicker__day:hover) {
+  background-color: #333;
+  border-radius: 50%;
+}
+:global(.react-datepicker__day--selected) {
+  background-color: #D4AF37;
+  color: #121212;
+  font-weight: 700;
+}
+:global(.react-datepicker__day--in-range) {
+  background-color: rgba(212, 175, 55, 0.2);
+  color: #D4AF37;
+  border-radius: 0; 
+}
+:global(.react-datepicker__day--range-start),
+:global(.react-datepicker__day--range-end) {
+  background-color: #D4AF37;
+  color: #121212;
+  font-weight: 700;
+  border-radius: 50%;
+}
+:global(.react-datepicker__day--range-start:hover),
+:global(.react-datepicker__day--range-end:hover) {
+  background-color: #D4AF37;
+  color: #121212;
+}
+:global(.react-datepicker__day--outside-month) {
+  color: #555;
+}
+:global(.react-datepicker__day--disabled) {
+  color: #444;
+  cursor: not-allowed;
+}
+.dateInput.react-datepicker-ignore-onclickoutside {
+  padding: 0.85rem 1rem 0.85rem 2.75rem !important;
+}
+
+/* ================================================ */
+/* === YENİ: HAFTALIK PROGRAM ÖZET STİLLERİ === */
+/* (MOBİL TAŞMA DÜZELTMESİ VE SAAT GÖRÜNÜMÜ) */
+/* ================================================ */
+
+.scheduleSummaryContainer {
+  /* GÜNCELLEME: Mobil için dikey grid */
+  display: grid;
+  grid-template-columns: 1fr; /* Mobilde alt alta dikey */
+  gap: 0.75rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.scheduleDay {
+  display: flex;
+  flex-direction: column; /* İçerik dikey */
+  align-items: stretch; /* İçeriği uzat */
+  justify-content: flex-start; /* Üstten başla */
+  gap: 0.75rem; /* Başlık ve liste arası boşluk */
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: #252525;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
+}
+
+.scheduleDay.scheduleToday {
+  border-color: #D4AF37;
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* YENİ: Gün başlığı (Pzt 10) */
+.scheduleDayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #444;
+}
+
+.scheduleDayName {
+  font-size: 0.9rem; /* Biraz büyütüldü */
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+}
+.scheduleDay.scheduleToday .scheduleDayName {
+  color: #D4AF37;
+}
+
+.scheduleDayNumber {
+  font-size: 1.1rem; 
+  font-weight: 700;
+  color: #E0E0E0;
+}
+.scheduleDay.scheduleToday .scheduleDayNumber {
+  color: #E6C25E;
+}
+
+/* === YENİ: Randevu Saati Listesi Stilleri === */
+.appointmentList {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Öğeler tam genişlikte */
+  gap: 0.35rem; /* Saatler arası boşluk */
+  width: 100%;
+}
+
+.appointmentEntry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1A1A1A; /* Daha koyu */
+  border: 1px solid #333;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+.scheduleDay.scheduleToday .appointmentEntry {
+  background-color: #2a2a2a;
+}
+
+.appointmentTime {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #D4AF37; 
+  flex-shrink: 0; /* Saatin büzülmesini engelle */
+  margin-right: 8px;
+}
+
+.appointmentMember {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #E0E0E0; 
+  /* İsim taşmasını engelle */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.noAppointments {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666; /* Soluk renk */
+  text-align: center;
+  width: 100%;
+  padding: 4px 0;
+}
+/* ================================== */
+
+
+/* GÜNCELLEME: Tablet ve üstü için (768px) */
+@media (min-width: 768px) {
+  .scheduleSummaryContainer {
+    /* Otomatik sığan, min 140px, maks 1fr'lik sütunlar */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+/* GÜNCELLEME: Geniş Ekran (1024px) */
+@media (min-width: 1024px) {
+  .scheduleSummaryContainer {
+    /* 7 sütuna zorla */
+    grid-template-columns: repeat(7, 1fr);
+  }
+}

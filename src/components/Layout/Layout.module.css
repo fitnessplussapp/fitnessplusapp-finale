@@ -1,0 +1,39 @@
+/* src/components/Layout/Layout.module.css */
+
+.layoutContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.mainContent {
+  width: 100%;
+  flex-grow: 1;
+  
+  /* Dikey Güvenli Alan (Üst) */
+  padding-top: calc(73px + env(safe-area-inset-top));
+  padding-bottom: 2rem;
+  
+  /* YENİ: Yatay Güvenli Alanlar Eklendi */
+  padding-left: calc(2rem + env(safe-area-inset-left));
+  padding-right: calc(2rem + env(safe-area-inset-right));
+
+  max-width: 1600px;
+  margin: 0 auto;
+  box-sizing: border-box; /* Kutu modellemesi eklendi */
+}
+
+/* HİBRİT YAPI: 768px ve altı (Mobil) */
+@media (max-width: 768px) {
+  .mainContent {
+    
+    /* Dikey Güvenli Alanlar (Üst/Alt) */
+    padding-top: calc(73px + env(safe-area-inset-top));
+    padding-bottom: calc(75px + env(safe-area-inset-bottom));
+    
+    /* YENİ: Mobil Yatay Güvenli Alanlar Eklendi */
+    padding-left: calc(1rem + env(safe-area-inset-left));
+    padding-right: calc(1rem + env(safe-area-inset-right));
+  }
+}

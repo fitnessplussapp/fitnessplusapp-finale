@@ -1,0 +1,357 @@
+/* src/pages/Admin/Approvals/Approvals.module.css */
+
+.approvalsPage {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  margin-bottom: 1.5rem;
+}
+
+/* Yüklenme ve Boş Durum */
+.loadingContainer,
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  color: #A0A0A0;
+  gap: 1rem;
+}
+.emptyState p { font-size: 1.1rem; font-weight: 500; }
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.errorText {
+  color: #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+}
+
+/* ================================== */
+/* === MOBİL KART TASARIMI (ANA)  === */
+/* ================================== */
+
+.approvalList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: row;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  align-items: stretch;
+}
+.card:hover {
+  border-color: #555;
+}
+
+.cardInfo {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-right: 1px solid #2A2A2A;
+  min-width: 0; /* Flexbox'ın taşmasını engeller */
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  align-items: flex-start;
+}
+.memberName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.coachName {
+  font-size: 0.85rem;
+  color: #D4AF37;
+  font-weight: 500;
+}
+
+.cardDetails {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+.cardDetails span {
+  line-height: 1;
+}
+
+.cardFooter {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.25rem;
+  flex-wrap: wrap; /* Butonlar ve rozetler sığmazsa alt alta */
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  height: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.actionButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.actionButton.reject {
+  color: #A0A0A0;
+  border-bottom: 1px solid #2A2A2A;
+}
+.actionButton.reject:hover:not(:disabled) {
+  background-color: #ef4444;
+  color: #FFF;
+}
+.actionButton.approve {
+  color: #A0A0A0;
+}
+.actionButton.approve:hover:not(:disabled) {
+  background-color: #D4AF37;
+  color: #121212;
+}
+
+/* Rozet Stilleri */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+.badgeNew {
+  background-color: rgba(5, 150, 105, 0.1);
+  color: #10b981;
+  border-color: #047857;
+}
+.badgeRenew {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: #1d4ed8;
+}
+.dietitian {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+/* YENİ: Detaylar Butonu */
+.detailsButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: #252525;
+  color: #A0A0A0;
+  border: 1px solid #333;
+  padding: 0.25rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.detailsButton:hover {
+  background-color: #333;
+  color: #FFF;
+  border-color: #555;
+}
+
+
+/* ================================== */
+/* === ONAY/RED MODALI (Değişiklik yok) == */
+/* ================================== */
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+.modalBody p { font-size: 1.05rem; color: #A0A0A0; line-height: 1.6; }
+.modalBody p strong { color: #E0E0E0; }
+.modalBody small { color: #888; font-size: 0.9rem; }
+.iconApprove { color: #D4AF37; }
+.iconReject { color: #ef4444; }
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+.modalButton {
+  flex-grow: 1;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.modalButton:disabled { background-color: #505050; color: #888; cursor: not-allowed; }
+.modalButton.primary { background-color: #D4AF37; color: #121212; }
+.modalButton.primary:hover:not(:disabled) { background-color: #E6C25E; }
+.modalButton.secondary { background-color: #2A2A2A; color: #A0A0A0; border: 1px solid #333; }
+.modalButton.secondary:hover:not(:disabled) { background-color: #333; color: #FFF; }
+.modalButton.danger { background-color: #ef4444; color: #FFFFFF; }
+.modalButton.danger:hover:not(:disabled) { background-color: #f87171; }
+.modalError { color: #ff6b6b; font-size: 0.9rem; margin-top: -0.5rem; }
+
+
+/* ================================== */
+/* === YENİ: PAKET GEÇMİŞİ MODALI  === */
+/* ================================== */
+.historyModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 50vh; /* Modalın taşmasını engeller */
+  overflow-y: auto;
+  /* Scrollbar stilleri */
+  scrollbar-width: thin;
+  scrollbar-color: #444 #2A2A2A;
+}
+.historyModalBody::-webkit-scrollbar { width: 8px; }
+.historyModalBody::-webkit-scrollbar-track { background: #2A2A2A; border-radius: 4px; }
+.historyModalBody::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; border: 2px solid #2A2A2A; }
+.historyModalBody::-webkit-scrollbar-thumb:hover { background-color: #777; }
+
+.packageList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.packageItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #222;
+  border: 1px solid #333;
+  padding: 1rem;
+  border-radius: 10px;
+}
+.packageItem.currentPackage {
+  border-color: #D4AF37;
+  background-color: rgba(212, 175, 55, 0.05);
+}
+.packageIcon {
+  flex-shrink: 0;
+  color: #D4AF37;
+}
+.packageDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.packageHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+}
+.packageHeader span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #A0A0A0;
+}
+.packageInfo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+.packageInfo span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+
+/* ================================== */
+/* === MASAÜSTÜ GRID DÜZENLEMESİ  === */
+/* ================================== */
+@media (min-width: 1024px) {
+  .approvalList {
+    /* Mobildeki flex listeyi, masaüstünde grid'e çevir */
+    display: grid;
+    /* En az 400px, en fazla 1fr (eşit paylaş) olacak şekilde sütunlar oluştur */
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1rem;
+  }
+  
+  /* Kartların içindeki dikey butonları yatay yap */
+  .cardActions {
+    flex-direction: row;
+  }
+  .actionButton {
+    height: 100%;
+    padding: 1rem 1.25rem;
+  }
+  .actionButton.reject {
+    border-bottom: none;
+    border-left: 1px solid #2A2A2A;
+  }
+  .actionButton.approve {
+    border-left: 1px solid #2A2A2A;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

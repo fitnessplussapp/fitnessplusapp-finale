@@ -1,0 +1,260 @@
+/* src/pages/Coach/CoachSchedulePage.module.css */
+/* (Admin'in WeeklySchedule.module.css dosyası ile %100 aynı) */
+
+.schedulePage {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 1. Hafta Navigasyonu */
+.weekNavigator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.navButton {
+  background: transparent;
+  border: none;
+  color: #A0A0A0;
+  padding: 1rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.navButton:hover {
+  background-color: #252525;
+  color: #D4AF37;
+}
+
+.weekDaysContainer {
+  display: flex;
+  flex-grow: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.weekDaysContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.dayButton {
+  flex-shrink: 0;
+  flex-grow: 0;
+  min-width: 56px; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.25rem; 
+  background: transparent;
+  border: none;
+  border-right: 1px solid #2A2A2A;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dayButton:last-child {
+  border-right: none;
+}
+.dayButton:hover {
+  background-color: #252525;
+}
+
+.dayName {
+  font-size: 0.7rem; 
+  font-weight: 500;
+  color: #888;
+  text-transform: uppercase;
+}
+.dayNumber {
+  font-size: 1rem; 
+  font-weight: 600;
+  color: #E0E0E0;
+}
+
+.dayButton.today .dayNumber {
+  color: #D4AF37;
+  font-weight: 700;
+}
+.dayButton.selectedDay {
+  background-color: #D4AF37;
+}
+.dayButton.selectedDay .dayName {
+  color: #121212;
+  font-weight: 600;
+}
+.dayButton.selectedDay .dayNumber {
+  color: #121212;
+  font-weight: 700;
+}
+
+
+/* 2. Saat Dilimi Listesi */
+.timeSlotList {
+  display: grid;
+  grid-template-columns: 1fr; 
+  gap: 0.75rem;
+  position: relative;
+}
+
+.listOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(26, 26, 26, 0.7);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.timeSlot {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.timeSlot:hover {
+  border-color: #555;
+  background-color: #222;
+  transform: translateY(-2px);
+}
+.slotTime {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #A0A0A0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.slotAction {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #D4AF37;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.timeSlot:hover .slotAction {
+  color: #E6C25E;
+}
+.filledSlot {
+  background-color: #252525;
+  border-left: 4px solid #D4AF37;
+}
+.filledSlot .slotTime {
+  color: #E0E0E0;
+}
+.filledSlot:hover {
+  border-color: #D4AF37;
+}
+.slotMemberName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+}
+
+/* 3. Modal İçi Stiller */
+.noMemberWarning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+.modalBody p {
+  font-size: 1.05rem;
+  color: #A0A0A0;
+  line-height: 1.6;
+}
+.modalBody p strong {
+  color: #E0E0E0;
+}
+.modalBody small {
+  color: #888;
+  font-size: 0.9rem;
+}
+.iconReject { 
+  color: #ef4444; 
+}
+.iconRefund {
+  color: #3b82f6; /* Mavi/Bilgi */
+}
+.modalError {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: -0.5rem;
+}
+
+
+/* Tablet ve Masaüstü İyileştirmesi */
+@media (min-width: 768px) {
+  .timeSlotList {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .weekDaysContainer {
+    overflow-x: hidden;
+  }
+  .dayButton {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 60px; 
+    padding: 0.75rem 0.5rem; 
+  }
+  .dayName {
+    font-size: 0.75rem;
+  }
+  .dayNumber {
+    font-size: 1.1rem;
+  }
+}
+@media (min-width: 1024px) {
+  .timeSlotList {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .navButton {
+    padding: 1rem 1rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sayfa Başlığı için (Form.module.css'ten alınmış gibi) */
+.pageTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  margin-bottom: 0.5rem; /* Program navigasyonuyla arası açıldı */
+}
