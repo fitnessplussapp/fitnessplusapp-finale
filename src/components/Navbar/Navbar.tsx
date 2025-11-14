@@ -40,7 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
         
         <div className={styles.logo}>
           <Sparkles size={32} className={styles.logoIcon} />
-          FITNESS<span className={styles.logoPlus}>PLUS</span>
+          ESPERTO<span className={styles.logoPlus}>PT</span>
         </div>
 
         {/* 2. Desktop Navigasyon Linkleri (GÜNCELLENDİ) */}
