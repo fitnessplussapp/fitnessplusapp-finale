@@ -116,7 +116,7 @@ const Login: React.FC = () => {
     <div className={styles.loginBox}>
       <div className={styles.logo}>
         <Sparkles size={40} className={styles.logoIcon} />
-        ESPERTO<span className={styles.logoPlus}>PT</span>
+        ESPERTO-<span className={styles.logoPlus}>PT</span>
       </div>
       <h2 className={styles.title}>Yönetim Paneli Girişi</h2>
       <form className={styles.form} onSubmit={handleSubmit}>
