@@ -1,11 +1,11 @@
 // src/pages/Admin/CoachManagement/members/AddNewMemberModal.tsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Calendar, DollarSign, User, Check, BarChart, Hash, TrendingUp, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Calendar, DollarSign, User, Check, BarChart, Hash, TrendingUp } from 'lucide-react';
 import Modal from '../../../../components/Modal/Modal';
 import formStyles from '../../../../components/Form/Form.module.css';
 
-import { setDocWithCount, getDocWithCount, updateDocWithCount } from '../../../../firebase/firestoreService';
+import { setDocWithCount, updateDocWithCount } from '../../../../firebase/firestoreService';
 import { db } from '../../../../firebase/firebaseConfig';
 import { doc, collection, addDoc, serverTimestamp, increment } from 'firebase/firestore'; 
 
@@ -22,18 +22,15 @@ interface ModalProps {
 }
 // -----------------
 
-// --- Yardımcı Fonksiyonlar (GÜNCELLENDİ) ---
+// --- Yardımcı Fonksiyonlar ---
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
 };
 
-/**
- * GÜNCELLENDİ: Artık 'sessionCount' (seans sayısı) parametresini alıyor.
- */
 const calculateFinancials = (
   price: number, 
   coachShare: CoachShare | null,
-  sessionCount: number // YENİ PARAMETRE
+  sessionCount: number 
 ): {
   companyCut: number,
   coachCut: number,
@@ -45,11 +42,11 @@ const calculateFinancials = (
     const shareValue = coachShare.value;
     
     if (coachShare.type === 'TL') {
-      // YENİ MANTIK: Şirket payı = (Seans Başı TL) * (Toplam Seans)
+      // Şirket payı = (Seans Başı TL) * (Toplam Seans)
       companyCut = shareValue * sessionCount; 
       coachCut = Math.max(0, price - companyCut);
     } else {
-      // ESKİ MANTIK: Şirket payı = Toplam Fiyat * Yüzde
+      // Şirket payı = Toplam Fiyat * Yüzde
       companyCut = price * (shareValue / 100); 
       coachCut = price - companyCut;
     }
@@ -67,72 +64,82 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
     isOpen, coachId, onClose, onSuccess 
 }) => {
     
-    // State'ler
+    // State'ler (Inputlar için String kullanıyoruz ki silinebilsin)
     const [name, setName] = useState(''); 
-    const [price, setPrice] = useState(0);
+    const [price, setPrice] = useState<string>('0');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [duration, setDuration] = useState(30);
-    const [sessionCount, setSessionCount] = useState(12); // Bu state kullanılacak
+    const [duration, setDuration] = useState<string>('30');
+    const [sessionCount, setSessionCount] = useState<string>('12');
     const [dietitianSupport, setDietitianSupport] = useState(true);
     const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Pending'>('Paid');
-    const [shareValue, setShareValue] = useState(0);
+    const [shareValue, setShareValue] = useState<string>('0');
     const [shareType, setShareType] = useState<'TL' | '%'>('TL');
     
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const title = 'Yeni Üye ve İlk Paket Kaydı';
 
-    // useMemo (Finansal) (GÜNCELLENDİ)
-    // Artık 'sessionCount' state'ini de dinliyor ve fonksiyona yolluyor.
+    // useMemo (Finansal Hesaplama)
     const financials = useMemo(() => {
-        const currentShare: CoachShare = { value: shareValue, type: shareType };
-        // GÜNCELLENDİ: 'sessionCount' eklendi
-        return calculateFinancials(price, currentShare, sessionCount); 
-    }, [price, shareValue, shareType, sessionCount]); // GÜNCELLENDİ
+        // String değerleri hesaplama için sayıya çeviriyoruz
+        const numPrice = Number(price) || 0;
+        const numShareValue = Number(shareValue) || 0;
+        const numSessionCount = Number(sessionCount) || 0;
 
-    // useMemo (Bitiş Tarihi) (Değişiklik yok)
+        const currentShare: CoachShare = { value: numShareValue, type: shareType };
+        return calculateFinancials(numPrice, currentShare, numSessionCount); 
+    }, [price, shareValue, shareType, sessionCount]);
+
+    // useMemo (Bitiş Tarihi)
     const calculatedEndDate = useMemo(() => {
         try {
             const start = new Date(startDate);
+            const numDuration = Number(duration) || 0;
+
             if (isNaN(start.getTime())) return null;
             const end = new Date(start.getTime());
-            end.setDate(start.getDate() + duration - 1); 
+            // Duration 0 ise bitiş tarihi başlangıç tarihiyle aynı olabilir
+            end.setDate(start.getDate() + Math.max(0, numDuration - 1)); 
             return end;
         } catch {
             return null;
         }
     }, [startDate, duration]);
 
-    // useEffect (Form Reset) (Değişiklik yok)
+    // useEffect (Form Reset)
     useEffect(() => {
         if (isOpen) {
             setName('');
-            setPrice(0); 
+            setPrice('0'); 
             setStartDate(new Date().toISOString().split('T')[0]);
-            setDuration(30);
-            setSessionCount(12);
+            setDuration('30');
+            setSessionCount('12');
             setPaymentStatus('Paid');
             setDietitianSupport(true);
-            setShareValue(0); 
+            setShareValue('0'); 
             setShareType('TL'); 
             setError(null);
         }
     }, [isOpen]);
-    // -----------------------------
 
-    // === handleSubmit (Admin Mantığı) (Değişiklik yok) ===
-    // (Kod değişmedi çünkü 'financials.companyCut' zaten güncel 'useMemo'dan geliyor)
+    // === handleSubmit ===
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         
-        // Validasyonlar
+        // String değerleri sayıya çevirerek işlem yap
+        const numPrice = price === '' ? 0 : Number(price);
+        const numDuration = duration === '' ? 0 : Number(duration);
+        const numSessionCount = sessionCount === '' ? 0 : Number(sessionCount);
+        const numShareValue = shareValue === '' ? 0 : Number(shareValue);
+
         if (!coachId) {
             setError("Koç ID'si bulunamadı. Sayfayı yenileyin.");
             return;
         }
-        if (price <= 0 || duration <= 0 || sessionCount <= 0 || shareValue < 0) {
-            setError("Fiyat, süre, seans sayısı ve şirket payı 0 veya daha büyük olmalıdır.");
+        // Sadece NEGATİF değerleri engelle (0 serbest)
+        if (numPrice < 0 || numDuration < 0 || numSessionCount < 0 || numShareValue < 0) {
+            setError("Fiyat, süre, seans sayısı ve şirket payı negatif olamaz.");
             return;
         }
         if (!name.trim()) {
@@ -156,23 +163,23 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                 packageStartDate: parsedStartDate,
                 packageEndDate: calculatedEndDate,
                 totalPackages: 1, 
-                currentSessionCount: sessionCount,
+                currentSessionCount: numSessionCount,
                 createdAt: serverTimestamp(),
             };
             
             // 2. PAKET PAYLOAD
             const packagePayload = {
-                price: price,
+                price: numPrice,
                 createdAt: parsedStartDate, 
-                duration: duration,
-                sessionCount: sessionCount,
+                duration: numDuration,
+                sessionCount: numSessionCount,
                 paymentStatus: paymentStatus,
                 dietitianSupport: dietitianSupport, 
                 approvalStatus: 'Approved', 
                 packageNumber: 1, 
                 lastUpdated: serverTimestamp(),
                 share: {
-                    value: shareValue,
+                    value: numShareValue,
                     type: shareType
                 } as CoachShare
             };
@@ -182,7 +189,6 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
             await addDoc(collection(newMemberRef, 'packages'), packagePayload);
             
             // 4. KOÇ GÜNCELLEMESİ
-            // (financials.companyCut zaten 'useMemo'dan doğru hesaplanıyor)
             const coachDocRef = doc(db, 'coaches', coachId);
             await updateDocWithCount(coachDocRef, {
                 totalMembers: increment(1),
@@ -198,7 +204,6 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
         }
     };
 
-    // --- JSX (RENDER) BÖLÜMÜ ---
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
             
@@ -211,7 +216,15 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                    <label htmlFor="name">Üye Adı Soyadı</label>
                    <div className={formStyles.inputWrapper}>
                        <User size={20} className={formStyles.inputIcon} />
-                       <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Üye adı soyadı" className={formStyles.input} required />
+                       <input 
+                           id="name" 
+                           type="text" 
+                           value={name} 
+                           onChange={(e) => setName(e.target.value)} 
+                           placeholder="Üye adı soyadı" 
+                           className={formStyles.input} 
+                           required 
+                       />
                    </div>
                 </div>
                 
@@ -220,11 +233,21 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                     <label htmlFor="price">Paket Fiyatı (TL)</label>
                     <div className={formStyles.inputWrapper}>
                         <DollarSign size={20} className={formStyles.inputIcon} />
-                        <input id="price" type="number" value={price === 0 ? '' : price} onChange={(e) => setPrice(Number(e.target.value) || 0)} placeholder="0" className={formStyles.input} min="0" required />
+                        {/* type="number" kalsa da onChange string alacak */}
+                        <input 
+                          id="price" 
+                          type="number" 
+                          value={price} 
+                          onChange={(e) => setPrice(e.target.value)} 
+                          placeholder="0" 
+                          className={formStyles.input} 
+                          min="0" 
+                          required 
+                        />
                     </div>
                 </div>
 
-                {/* Şirket Payı (GÜNCELLENDİ: Label değişti) */}
+                {/* Şirket Payı */}
                 <div className={formStyles.inputGroup}>
                   <label htmlFor="shareValue">Şirketin Alacağı Pay (TL ise Seans Başı, % ise Toplamdan)</label>
                   <div className={formStyles.compoundInputWrapper}>
@@ -233,10 +256,10 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                       id="shareValue"
                       type="number"
                       step="any" 
-                      placeholder="Değer girin (Örn: 20)"
+                      placeholder="0"
                       className={formStyles.input}
-                      value={shareValue === 0 ? '' : shareValue}
-                      onChange={(e) => setShareValue(Number(e.target.value) || 0)}
+                      value={shareValue}
+                      onChange={(e) => setShareValue(e.target.value)}
                       disabled={isLoading}
                       min="0"
                       required
@@ -261,7 +284,6 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                     </div>
                   </div>
                 </div>
-                {/* ----------------------------- */}
                 
                 {/* Süre / Seans */}
                 <div className={formStyles.gridGroup} style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -269,20 +291,37 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                         <label htmlFor="duration">Süre (Gün)</label>
                         <div className={formStyles.inputWrapper}>
                             <BarChart size={20} className={formStyles.inputIcon} />
-                            <input id="duration" type="number" value={duration === 0 ? '' : duration} onChange={(e) => setDuration(Number(e.target.value) || 0)} placeholder="30" className={formStyles.input} min="1" required />
+                            <input 
+                              id="duration" 
+                              type="number" 
+                              value={duration} 
+                              onChange={(e) => setDuration(e.target.value)} 
+                              placeholder="30" 
+                              className={formStyles.input} 
+                              min="0" 
+                              required 
+                            />
                         </div>
                     </div>
                     <div className={formStyles.inputGroup}>
                         <label htmlFor="sessionCount">Seans Sayısı</label>
                         <div className={formStyles.inputWrapper}>
                             <Hash size={20} className={formStyles.inputIcon} />
-                            {/* Değişiklik: onChange'de 'setSessionCount' kullanılıyor */}
-                            <input id="sessionCount" type="number" value={sessionCount === 0 ? '' : sessionCount} onChange={(e) => setSessionCount(Number(e.target.value) || 0)} placeholder="12" className={formStyles.input} min="1" required />
+                            <input 
+                              id="sessionCount" 
+                              type="number" 
+                              value={sessionCount} 
+                              onChange={(e) => setSessionCount(e.target.value)} 
+                              placeholder="12" 
+                              className={formStyles.input} 
+                              min="0" 
+                              required 
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Finansal Özet (Artık 'sessionCount'a göre de güncelleniyor) */}
+                {/* Finansal Özet */}
                  <div className={formStyles.formSummaryBox}>
                      <div className={formStyles.summaryItem}><span>Şirket Payı:</span><strong>{formatCurrency(financials.companyCut)}</strong></div>
                      <div className={`${formStyles.summaryItem} ${formStyles.positive}`}><span>Koça Kalan:</span><strong>{formatCurrency(financials.coachCut)}</strong></div>

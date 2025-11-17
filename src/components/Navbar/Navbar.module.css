@@ -5,7 +5,7 @@
   background-color: #1A1A1A;
   border-bottom: 1px solid #2A2A2A;
   
-  /* YENİ: Dikey ve Yatay Güvenli Alanlar Eklendi */
+  /* Dikey ve Yatay Güvenli Alanlar */
   padding-top: calc(1rem + env(safe-area-inset-top));
   padding-bottom: 1rem;
   padding-left: calc(2rem + env(safe-area-inset-left));
@@ -15,7 +15,7 @@
   top: 0;
   left: 0;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   box-sizing: border-box; 
 }
 
@@ -28,16 +28,66 @@
   margin: 0 auto;
 }
 
+/* --- LOGO ALANI --- */
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Logo ile versiyon arası boşluğu açtık */
+}
+
 .logo {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem; /* Yazı boyutunu büyüttük (Eski: 1.5rem) */
+  font-weight: 800;   /* Daha kalın font */
   color: #FFFFFF;
   display: flex;
   align-items: center;
+  line-height: 1;
+  letter-spacing: -0.02em; /* Modern görünüm için harfleri hafif yaklaştırdık */
 }
-.logoIcon { color: #D4AF37; margin-right: 0.5rem; }
-.logoPlus { color: #D4AF37; }
 
+/* GÜNCELLENDİ: Logo Görseli Ayarları */
+.logoImage {
+  height: 42px; /* Logoyu büyüttük (Eski: 32px) */
+  width: auto;  
+  margin-right: 0.75rem; 
+  object-fit: contain;
+}
+
+.logoPlus { 
+  color: #D4AF37; 
+}
+
+/* GÜNCELLENDİ: Versiyon Rozeti (Daha Okunaklı) */
+.versionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Arka planı biraz daha görünür kıldık */
+  background-color: rgba(255, 255, 255, 0.08); 
+  border: 1px solid rgba(255, 255, 255, 0.15); /* Çerçeveyi belirginleştirdik */
+  color: #888; /* Yazı rengini açtık (Eski: #666) */
+  
+  font-size: 0.75rem; /* Fontu büyüttük (Eski: 0.7rem) */
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  
+  padding: 0.25rem 0.6rem; /* Kutu iç boşluğunu artırdık */
+  border-radius: 6px; /* Tam yuvarlak yerine hafif köşeli modern yapı */
+  
+  transition: all 0.3s ease;
+  cursor: default;
+  user-select: none;
+}
+
+.versionBadge:hover {
+  border-color: #D4AF37;
+  color: #D4AF37;
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* --- MENÜ LİNKLERİ --- */
 .navLinks {
   display: flex;
   align-items: center;
@@ -52,7 +102,7 @@
   color: #A0A0A0;
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1rem; /* Link yazılarını da hafif büyüttük */
   padding: 0.5rem 0;
   transition: color 0.3s ease, border-bottom-color 0.3s ease;
   border-bottom: 2px solid transparent;
@@ -67,18 +117,37 @@
   border-bottom-color: #D4AF37;
 }
 
+/* --- PROFİL ALANI --- */
 .userProfile {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   color: #E0E0E0;
 }
-.userName { font-weight: 500; font-size: 0.9rem; }
+.userName { font-weight: 600; font-size: 0.95rem; }
 .userAvatar { color: #707070; cursor: pointer; transition: color 0.3s ease; }
 .userAvatar:hover { color: #D4AF37; }
 
+/* Çıkış Butonu */
+.logoutButton {
+  background: none;
+  border: none;
+  color: #A0A0A0;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
 
-/* === MOBİL GÖRÜNÜM (GÜNCELLENDİ) === */
+.logoutButton:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+/* === MOBİL UYUMLULUK (Responsive) === */
 @media (max-width: 768px) {
   
   .navLinks {
@@ -89,33 +158,30 @@
   }
   
   .navbar {
-    /* YENİ: Mobil Dikey ve Yatay Güvenli Alanlar Eklendi */
-    padding-top: calc(1rem + env(safe-area-inset-top));
-    padding-bottom: 1rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
+    padding-bottom: 0.75rem;
     padding-left: calc(1rem + env(safe-area-inset-left));
     padding-right: calc(1rem + env(safe-area-inset-right));
-    
-    /* Yükseklik sadece 'top' güvenli alanından etkilenir */
-    height: calc(73px + env(safe-area-inset-top)); 
+    height: auto; /* Yüksekliği içeriğe göre esnet */
   }
-}
 
-/* === Çıkış Butonu Stilleri === */
-.logoutButton {
-  background: none;
-  border: none;
-  color: #A0A0A0;
-  cursor: pointer;
-  padding: 0.5rem;
-  margin-left: 0.25rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
+  /* Mobilde Badge Ayarı */
+  .versionBadge {
+    font-size: 0.7rem; /* Mobilde de okunabilir olsun */
+    padding: 0.2rem 0.5rem;
+  }
+  
+  .logoWrapper {
+    gap: 0.75rem;
+  }
+  
+  /* Mobilde Logo Ayarı */
+  .logo {
+    font-size: 1.4rem;
+  }
 
-.logoutButton:hover {
-  background-color: #2A2A2A;
-  color: #e74c3c;
+  .logoImage {
+    height: 36px; /* Mobilde de belirgin olsun (Eski: 28px) */
+    margin-right: 0.5rem;
+  }
 }

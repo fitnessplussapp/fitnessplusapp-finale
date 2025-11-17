@@ -16,15 +16,14 @@ import Settings from './pages/Admin/Settings/Settings';
 import Approvals from './pages/Admin/Approvals/Approvals';
 import WeeklySchedule from './pages/Admin/CoachManagement/schedule/WeeklySchedule';
 
+// YENİ: Maaş Hesaplama Sayfası Importu
+import CoachPayments from './pages/Admin/CoachManagement/Payments/CoachPayments';
+
 // === KOÇ SAYFALARI ===
 import CoachDashboardPage from './pages/Coach/CoachDashboardPage';
 import CoachMembersPage from './pages/Coach/CoachMembersPage';
 import CoachSchedulePage from './pages/Coach/CoachSchedulePage';
-
-// === GÜNCELLEME: Koç'un üye detay sayfası import edildi ===
 import CoachMemberDetails from './pages/Coach/CoachMemberDetails'; 
-// (Bu dosyanın adının 'CoachMemberDetails.tsx' olduğunu varsayıyorum)
-// ----------------------------------------------------
 
 
 const App: React.FC = () => {
@@ -52,26 +51,26 @@ const App: React.FC = () => {
             path="/admin/coaches/:id/schedule" 
             element={<WeeklySchedule />}
           />
+          
+          {/* YENİ: Maaş Hesaplama Rotası */}
+          <Route path="/admin/payments" element={<CoachPayments />} />
+          
           <Route path="/admin/approvals" element={<Approvals />} />
           <Route path="/admin/settings" element={<Settings />} />
 
-          {/* == KOÇ ROTALARI (GÜNCELLENDİ) == */}
+          {/* == KOÇ ROTALARI == */}
           <Route 
             path="/coach" 
             element={<CoachDashboardPage />} 
           />
           <Route 
             path="/coach/members" 
-            element={<CoachMembersPage />} // Üye Listesi
+            element={<CoachMembersPage />} 
           />
-          
-          {/* === GÜNCELLEME: Koç'un üye detay sayfası rotası eklendi === */}
           <Route 
             path="/coach/members/:memberId" 
-            element={<CoachMemberDetails />} // Üye Detay Sayfası
+            element={<CoachMemberDetails />} 
           />
-          {/* -------------------------------------------------- */}
-          
           <Route 
             path="/coach/schedule" 
             element={<CoachSchedulePage />} 

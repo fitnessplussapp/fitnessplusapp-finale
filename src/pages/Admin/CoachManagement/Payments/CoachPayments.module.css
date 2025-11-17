@@ -1,0 +1,303 @@
+/* src/pages/Admin/CoachManagement/Payments/CoachPayments.module.css */
+
+.pageContainer {
+  animation: fadeIn 0.5s ease-out;
+  padding-bottom: 6rem; /* Mobilde alt menü olduğu için boşluk artırıldı */
+}
+
+/* === FİLTRE ALANI === */
+.filterSection {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* GÜNCELLENDİ: Mobil Uyumlu Header */
+.filterHeader {
+  display: flex;
+  flex-direction: column; /* Mobilde alt alta */
+  gap: 1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 1rem;
+}
+
+/* Tablet ve üstünde yan yana olsun */
+@media (min-width: 640px) {
+  .filterHeader {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.filterTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Hazır Tarih Butonları */
+.presetContainer {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%; /* Mobilde tam genişlik */
+}
+
+@media (min-width: 640px) {
+  .presetContainer {
+    width: auto; /* Masaüstünde içeriğe göre */
+  }
+}
+
+.presetButton {
+  background-color: #252525;
+  border: 1px solid #333;
+  color: #A0A0A0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1; /* Mobilde butonlar eşit yayılsın */
+  text-align: center;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .presetButton {
+    flex: initial; /* Masaüstünde normal boyut */
+  }
+}
+
+.presetButton:hover {
+  background-color: #333;
+  color: #FFF;
+}
+
+
+/* --- FİLTRE KONTROLLERİ (Grid Yapısı) --- */
+.filterControls {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .filterControls {
+    grid-template-columns: 1fr 1fr 1fr; /* Koç Seçimi - Başlangıç - Bitiş */
+  }
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.inputGroup label {
+  font-size: 0.85rem;
+  color: #A0A0A0;
+  font-weight: 500;
+}
+
+/* Select ve DatePicker Ortak Stilleri */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.inputIcon {
+  position: absolute;
+  left: 1rem;
+  color: #707070;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.selectInput, 
+.dateInput {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #E0E0E0;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box; /* Taşmayı engeller */
+}
+.selectInput:focus,
+.dateInput:focus {
+  outline: none;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+/* React-Datepicker özelleştirmesi */
+:global(.react-datepicker-wrapper) {
+  width: 100%;
+}
+
+
+/* === HESAPLAMA ÖZET KARTI (SONUÇ EKRANI) === */
+.summarySection {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 992px) {
+  .summarySection {
+    grid-template-columns: 2fr 1fr; /* Tablo Solda, Hesap Makinesi Sağda */
+  }
+}
+
+/* Hesap Makinesi Kutusu */
+.calculatorCard {
+  background: linear-gradient(145deg, #1a1a1a, #222);
+  border: 1px solid #D4AF37;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  height: fit-content;
+}
+
+.calcRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #333;
+}
+.calcRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  padding-top: 0.5rem;
+}
+
+.calcLabel {
+  font-size: 1rem;
+  color: #A0A0A0;
+  font-weight: 500;
+}
+.calcValue {
+  font-size: 1.25rem;
+  color: #E0E0E0;
+  font-weight: 700;
+}
+.calcValue.positive { color: #22c55e; } 
+.calcValue.negative { color: #ef4444; } 
+
+/* Maaş Inputu */
+.salaryInput {
+  background-color: #111;
+  border: 1px solid #444;
+  color: #D4AF37;
+  padding: 0.5rem;
+  border-radius: 6px;
+  text-align: right;
+  font-size: 1.2rem;
+  font-weight: 700;
+  width: 120px;
+}
+.salaryInput:focus {
+  outline: none;
+  border-color: #D4AF37;
+}
+
+.resultBox {
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+.resultLabel {
+  display: block;
+  font-size: 0.9rem;
+  color: #D4AF37;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.resultAmount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #FFF;
+}
+
+
+/* === LİSTE / TABLO ALANI === */
+.tableCard {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.5rem;
+  overflow-x: auto; /* Mobilde yatay kaydırma */
+}
+.tableHeader {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #E0E0E0;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.transactionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* Tablonun minimum genişliği */
+}
+.transactionsTable th {
+  text-align: left;
+  padding: 0.75rem;
+  color: #888;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+}
+.transactionsTable td {
+  padding: 0.75rem;
+  color: #E0E0E0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #252525;
+}
+.transactionsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.shareBadge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background-color: #252525;
+  color: #A0A0A0;
+  border: 1px solid #333;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #888;
+  gap: 1rem;
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

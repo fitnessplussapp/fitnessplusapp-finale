@@ -13,10 +13,12 @@ import {
   Info,
   UserCheck,
   ShieldAlert,
-  HelpCircle 
+  HelpCircle,
+  Calendar as CalendarIcon,
+  RotateCcw
 } from 'lucide-react';
 
-// === Firebase ve Servis Importları (Değişiklik yok) ===
+// === Firebase ve Servis Importları ===
 import { 
   getCoachMembers, 
   getCoachScheduleForDay,
@@ -31,12 +33,11 @@ import { db } from '../../firebase/firebaseConfig';
 
 
 // --- Tipler ---
-// GÜNCELLEME: CoachMember tipi
 interface CoachMember {
   id: string;
   name: string;
-  currentSessionCount: number; // Kalan seans
-  packageEndDate: Date | null; // YENİ: Paket bitiş tarihi
+  currentSessionCount: number;
+  packageEndDate: Date | null;
 }
 interface Appointment {
   id: string; 
@@ -64,7 +65,7 @@ interface RefundModalState {
 }
 // -----------------
 
-// === Saat dilimleri listesi (07:00 - 21:00 arası) (Değişiklik yok) ===
+// === Saat dilimleri listesi (07:00 - 21:00 arası) ===
 const generateTimeSlots = (): string[] => {
   const slots: string[] = [];
   for (let hour = 7; hour <= 21; hour++) {
@@ -73,9 +74,8 @@ const generateTimeSlots = (): string[] => {
   return slots;
 };
 const TIME_SLOTS = generateTimeSlots();
-// -----------------------------------------------------
 
-// === Tarih Yardımcı Fonksiyonları (Değişiklik yok) ===
+// === Tarih Yardımcı Fonksiyonları ===
 const getLocalDateString = (date: Date): string => {
   return date.toLocaleDateString('en-CA'); 
 };
@@ -92,18 +92,15 @@ const getWeekDays = (baseDate: Date) => {
   }
   return days;
 };
-// -----------------------------------
 
 
 const CoachSchedulePage: React.FC = () => {
-  // === coachId'yi useAuth'tan al (Değişiklik yok) ===
   const { currentUser } = useAuth();
   const coachId = currentUser?.username; 
-  // -------------------------------------
   
-  // State'ler (Değişiklik yok)
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+  // State'ler
+  const [currentDate, setCurrentDate] = useState(new Date()); // Navigasyon için baz tarih
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date()); // Seçili gün
   const [coachMembers, setCoachMembers] = useState<CoachMember[]>([]);
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -120,13 +117,18 @@ const CoachSchedulePage: React.FC = () => {
   const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
   const todayString = getLocalDateString(new Date());
 
-  // === GÜNCELLEME: Koçun tüm üyeleri (seans ve paket tarihiyle) ===
+  // YENİ: Ay ve Yıl bilgisini navigasyondaki ilk güne (Pazartesi) göre hesapla
+  const monthYearString = useMemo(() => {
+    const firstDayOfWeek = weekDays[0];
+    return firstDayOfWeek.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  }, [weekDays]);
+
+  // === Veri Çekme: Koçun tüm üyeleri ===
   const fetchAllCoachMembers = useCallback(async () => {
     if (!coachId) return;
     try {
       const membersData = await getCoachMembers(coachId);
       setCoachMembers(membersData.map(m => {
-        // YENİ: packageEndDate'i al ve Date'e çevir
         const endDate = m.packageEndDate instanceof Timestamp 
                         ? m.packageEndDate.toDate() 
                         : null;
@@ -134,7 +136,7 @@ const CoachSchedulePage: React.FC = () => {
           id: m.id, 
           name: m.name,
           currentSessionCount: m.currentSessionCount || 0,
-          packageEndDate: endDate // YENİ
+          packageEndDate: endDate 
         };
       }));
     } catch (err: any) {
@@ -142,7 +144,7 @@ const CoachSchedulePage: React.FC = () => {
     }
   }, [coachId]);
 
-  // === Veri Çekme: Seçili GÜN'ün programı (Değişiklik yok) ===
+  // === Veri Çekme: Seçili GÜN'ün programı ===
   const fetchScheduleForDay = useCallback(async (day: Date) => {
     if (!coachId) return;
     setLoadingSchedule(true);
@@ -162,7 +164,7 @@ const CoachSchedulePage: React.FC = () => {
     }
   }, [coachId]);
 
-  // İlk Yükleme (Değişiklik yok)
+  // İlk Yükleme
   useEffect(() => {
     if (!coachId) {
       setError("Koç bilgisi bulunamadı.");
@@ -177,8 +179,7 @@ const CoachSchedulePage: React.FC = () => {
   }, [fetchAllCoachMembers, fetchScheduleForDay, selectedDay, coachId]);
 
 
-  // === HAFTALIK PROGRAM LOGIC (GÜNCELLEME) ===
-  // Filtreleme (disabled) işlemi JSX içinde yapılacak.
+  // === Filtreleme & Slot Hazırlığı ===
   const availableMembers = useMemo(() => {
     const scheduledMemberIds = new Set(appointments.map(a => a.memberId));
     if (modal.appointment) {
@@ -195,16 +196,26 @@ const CoachSchedulePage: React.FC = () => {
   }, [appointments]);
 
 
-  // === EYLEMLER (Değişiklik yok) ===
+  // === Navigasyon İşlevleri ===
   const handleSelectDay = (day: Date) => {
     setSelectedDay(day);
     fetchScheduleForDay(day);
   };
+  
   const changeWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -7 : 7));
     setCurrentDate(newDate);
   };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDay(today);
+    fetchScheduleForDay(today);
+  };
+
+  // === Modal Aç/Kapa ===
   const openModal = (time: string, appointment: Appointment | null) => {
     setModal({ isOpen: true, time, appointment });
   };
@@ -219,7 +230,7 @@ const CoachSchedulePage: React.FC = () => {
     setDeleteConfirmModal({ isOpen: false, appointment: null });
   };
 
-  // === Seans İade Modalı Fonksiyonları (Değişiklik yok) ===
+  // === İade Modalı ===
   const handleRefundModalClose = () => {
     setRefundModal({ isOpen: false, memberId: '', memberName: '' });
     fetchScheduleForDay(selectedDay);
@@ -243,9 +254,8 @@ const CoachSchedulePage: React.FC = () => {
       handleRefundModalClose();
     }
   };
-  // ------------------------------------------
-  
-  // === GÜNCELLEME: Randevu Ekleme/Güncelleme (Paket/Seans Kontrollü) ===
+
+  // === Randevu Kaydetme ===
   const handleSaveAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!coachId || !modal.time) return;
@@ -266,16 +276,13 @@ const CoachSchedulePage: React.FC = () => {
         return;
     }
 
-    // YENİ: Kaydetme anında çift kontrol
     const isEditingThisMember = (modal.appointment && modal.appointment.memberId === memberId);
-
     if (!isEditingThisMember) {
         if (selectedMember.currentSessionCount <= 0) {
             setError("Bu üyenin (0) seansı kalmamıştır.");
             setLoadingSchedule(false); 
             return;
         }
-
         const today = new Date();
         today.setHours(0, 0, 0, 0); 
         const isPackageActive = selectedMember.packageEndDate ? selectedMember.packageEndDate.getTime() >= today.getTime() : false;
@@ -308,11 +315,8 @@ const CoachSchedulePage: React.FC = () => {
     
     try {
       const memberDocRef = doc(db, 'coaches', coachId, 'members', memberId);
-
       if (oldAppointment) {
-        // --- GÜNCELLEME SENARYOSU ---
         if (oldAppointment.memberId !== memberId) {
-          // ÜYE DEĞİŞTİ
           await updateDocWithCount(memberDocRef, { currentSessionCount: increment(-1) });
           await setAppointment(coachId, scheduleId, appointmentData);
           setRefundModal({ 
@@ -321,12 +325,10 @@ const CoachSchedulePage: React.FC = () => {
             memberName: oldAppointment.memberName 
           });
         } else {
-          // ÜYE AYNI KALDI
           await setAppointment(coachId, scheduleId, appointmentData);
           await fetchScheduleForDay(selectedDay); 
         }
       } else {
-        // --- YENİ KAYIT SENARYOSU ---
         await updateDocWithCount(memberDocRef, { currentSessionCount: increment(-1) });
         await setAppointment(coachId, scheduleId, appointmentData);
         await fetchScheduleForDay(selectedDay);
@@ -338,7 +340,7 @@ const CoachSchedulePage: React.FC = () => {
     }
   };
 
-  // === Randevu Silme (Değişiklik yok) ===
+  // === Randevu Silme ===
   const handleDeleteAppointment = async () => {
     if (!coachId || !deleteConfirmModal.appointment) return;
     
@@ -365,7 +367,7 @@ const CoachSchedulePage: React.FC = () => {
   
   if (loading) {
     return (
-      <div className={styles.schedulePage} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div className={styles.schedulePage} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <Loader2 size={32} className={formStyles.spinner} />
       </div>
     );
@@ -375,24 +377,43 @@ const CoachSchedulePage: React.FC = () => {
     <>
       <div className={styles.schedulePage}>
         
-        <h1 className={formStyles.pageTitle}>Haftalık Programım</h1>
+        {/* --- 1. Header ve Kontroller --- */}
+        <div className={styles.headerContainer}>
+          <div className={styles.headerTop}>
+            <h1 className={styles.pageTitle}>Programım</h1>
+            <button onClick={goToToday} className={styles.todayButton}>
+              <RotateCcw size={16} />
+              Bugün
+            </button>
+          </div>
 
-        {/* Hafta Navigasyonu (Değişiklik yok) */}
-        <div className={styles.weekNavigator}>
-          <button onClick={() => changeWeek('prev')} className={styles.navButton}>
-            <ChevronLeft size={24} />
-          </button>
-          <div className={styles.weekDaysContainer}>
+          <div className={styles.navigationControl}>
+            <button onClick={() => changeWeek('prev')} className={styles.navButton}>
+              <ChevronLeft size={24} />
+            </button>
+            
+            <div className={styles.monthLabel}>
+              <CalendarIcon size={18} />
+              {monthYearString}
+            </div>
+
+            <button onClick={() => changeWeek('next')} className={styles.navButton}>
+              <ChevronRight size={24} />
+            </button>
+          </div>
+
+          {/* Gün Seçimi (Horizontal Scroll) */}
+          <div className={styles.daysStripContainer}>
             {weekDays.map(day => {
               const dayStr = getLocalDateString(day);
               const isSelected = dayStr === getLocalDateString(selectedDay);
               const isToday = dayStr === todayString;
               
               return (
-                <button 
+                <div 
                   key={day.toISOString()}
                   className={`
-                    ${styles.dayButton} 
+                    ${styles.dayCard} 
                     ${isSelected ? styles.selectedDay : ''}
                     ${isToday ? styles.today : ''}
                   `}
@@ -404,23 +425,19 @@ const CoachSchedulePage: React.FC = () => {
                   <span className={styles.dayNumber}>
                     {day.getDate()}
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
-          <button onClick={() => changeWeek('next')} className={styles.navButton}>
-            <ChevronRight size={24} />
-          </button>
         </div>
         
-        {/* Hata Mesajı (Değişiklik yok) */}
         {error && (
-          <div className={formStyles.error} style={{ margin: '1rem' }}>
+          <div className={formStyles.error} style={{ margin: '1rem 0' }}>
             {error}
           </div>
         )}
 
-        {/* Saat Dilimleri Listesi (Değişiklik yok) */}
+        {/* --- 2. Saat Dilimleri Listesi --- */}
         <div className={styles.timeSlotList}>
           {loadingSchedule && (
             <div className={styles.listOverlay}>
@@ -435,24 +452,27 @@ const CoachSchedulePage: React.FC = () => {
           {timeSlots.map(slot => (
             slot.appointment ? (
               // --- Dolu Slot ---
-              <button 
+              <div 
                 key={slot.time} 
                 className={`${styles.timeSlot} ${styles.filledSlot}`}
                 onClick={() => openModal(slot.time, slot.appointment)}
               >
-                <div className={styles.slotTime}>
-                  <UserCheck size={16} />
-                  {slot.time}
+                <div className={styles.slotInfo}>
+                  <div className={styles.slotTime}>
+                    <UserCheck size={18} style={{color: '#D4AF37'}} />
+                    {slot.time}
+                  </div>
+                  <span className={styles.slotMemberName}>
+                    {slot.appointment.memberName}
+                  </span>
                 </div>
-                <span className={styles.slotMemberName}>
-                  {slot.appointment.memberName}
-                </span>
-              </button>
+                {/* İkon veya Aksiyon göstergesi gerekirse buraya */}
+              </div>
             ) : (
               // --- Boş Slot ---
-              <button 
+              <div 
                 key={slot.time} 
-                className={styles.timeSlot}
+                className={`${styles.timeSlot} ${styles.emptySlot}`}
                 onClick={() => openModal(slot.time, null)}
               >
                 <div className={styles.slotTime}>
@@ -462,13 +482,13 @@ const CoachSchedulePage: React.FC = () => {
                   <UserPlus size={16} />
                   Üye Ata
                 </span>
-              </button>
+              </div>
             )
           ))}
         </div>
       </div>
 
-      {/* --- 1. Randevu Atama/Düzenleme Modalı --- */}
+      {/* --- MODAL 1: Randevu Atama/Düzenleme --- */}
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
@@ -482,11 +502,9 @@ const CoachSchedulePage: React.FC = () => {
               className={formStyles.input} 
               disabled 
               value={`${selectedDay.toLocaleDateString('tr-TR', { dateStyle: 'full' })} - ${modal.time}`}
-              style={{ paddingLeft: '1rem' }}
             />
           </div>
           
-          {/* === GÜNCELLEME: Üye Seçim Listesi (Paket/Seans Kontrollü) === */}
           <div className={formStyles.inputGroup}>
             <label htmlFor="memberId">Atanacak Üye</label>
             
@@ -501,7 +519,6 @@ const CoachSchedulePage: React.FC = () => {
               id="memberId" 
               name="memberId" 
               className={formStyles.input}
-              style={{ paddingLeft: '1rem' }}
               defaultValue={
                 modal.appointment 
                 ? `${modal.appointment.memberId}|${modal.appointment.memberName}` 
@@ -524,7 +541,6 @@ const CoachSchedulePage: React.FC = () => {
                   if (!isPackageActive) {
                     label = ` (Mevcut, Paket Dolmuş: ${member.currentSessionCount})`;
                   }
-
                   return (
                     <option 
                       key={member.id} 
@@ -538,17 +554,14 @@ const CoachSchedulePage: React.FC = () => {
               
               {/* Diğer uygun üyeleri listele */}
               {availableMembers
-                .filter(m => m.id !== modal.appointment?.memberId) // Mevcut üyeyi tekrar listeleme
+                .filter(m => m.id !== modal.appointment?.memberId) 
                 .map(member => {
-                  
-                  // YENİ: Kontroller
                   const today = new Date();
                   today.setHours(0, 0, 0, 0); 
                   const isPackageActive = member.packageEndDate ? member.packageEndDate.getTime() >= today.getTime() : false;
                   const hasSessions = member.currentSessionCount > 0;
                   const isSelectable = isPackageActive && hasSessions;
 
-                  // YENİ: Etiket
                   let label = ` (Kalan: ${member.currentSessionCount})`;
                   if (!isPackageActive) {
                     label = " (Paket Süresi Dolmuş)";
@@ -560,17 +573,15 @@ const CoachSchedulePage: React.FC = () => {
                     <option 
                       key={member.id} 
                       value={`${member.id}|${member.name}`}
-                      disabled={!isSelectable} // YENİ: Seçilemez yap
+                      disabled={!isSelectable}
                     >
                       {member.name} {label}
                     </option>
                   );
                 })}
             </select>
-            
           </div>
 
-          {/* Form Butonları (Değişiklik yok) */}
           <div className={formStyles.formActions}>
             <button 
               type="button" 
@@ -603,7 +614,7 @@ const CoachSchedulePage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* --- 2. Randevu Silme Onay Modalı (Değişiklik yok) --- */}
+      {/* --- MODAL 2: Silme Onayı --- */}
       <Modal
         isOpen={deleteConfirmModal.isOpen}
         onClose={closeDeleteConfirmModal}
@@ -645,7 +656,7 @@ const CoachSchedulePage: React.FC = () => {
         )}
       </Modal>
 
-      {/* --- 3. Seans İade Modalı (Değişiklik yok) --- */}
+      {/* --- MODAL 3: Seans İadesi --- */}
       <Modal
         isOpen={refundModal.isOpen}
         onClose={handleRefundModalClose}
@@ -660,7 +671,7 @@ const CoachSchedulePage: React.FC = () => {
             Bu 1 seansı üyeye <strong>geri iade etmek</strong> istiyor musunuz?
           </p>
           <small>
-            'Evet' derseniz üyenin seans hakkı 1 artar. 'Hayır' derseniz seans hakkı kullanılmış olarak kalır.
+            'Evet' derseniz üyenin seans hakkı 1 artar.
           </small>
 
           {error && <p className={styles.modalError}>{error}</p>}
@@ -680,7 +691,7 @@ const CoachSchedulePage: React.FC = () => {
               className={`${formStyles.submitButton} ${formStyles.primary}`}
               disabled={isDeleting}
             >
-              {isDeleting ? <Loader2 size={18} className={formStyles.spinner} /> : 'Evet, Seansı İade Et'}
+              {isDeleting ? <Loader2 size={18} className={formStyles.spinner} /> : 'Evet, İade Et'}
             </button>
           </div>
         </div>

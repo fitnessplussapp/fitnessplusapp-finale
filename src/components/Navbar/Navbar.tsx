@@ -4,16 +4,19 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import {
-  Sparkles,
   LayoutDashboard,
-  Users, // "Üyeler" için bu ikonu kullanacağız
+  Users,
   CheckSquare,
   Settings,
   UserCircle,
   LogOut,
-  Calendar 
+  Calendar,
+  Calculator // YENİ: Hesap Makinesi İkonu
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+// Logo importu
+import appLogo from '../../assets/logo.png'; 
 
 interface NavbarProps {
   userRole: 'admin' | 'coach';
@@ -22,6 +25,8 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  
+  const appVersion = import.meta.env.PACKAGE_VERSION || 'v1.0.0';
 
   const basePath = userRole === 'admin' ? '/admin' : '/coach';
 
@@ -38,26 +43,41 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
     <nav className={styles.navbar}>
       <div className={styles.navbarContent}>
         
-        <div className={styles.logo}>
-          <Sparkles size={32} className={styles.logoIcon} />
-          ESPERTO-<span className={styles.logoPlus}>PT</span>
+        {/* SOL KISIM: LOGO VE VERSİYON */}
+        <div className={styles.logoWrapper}>
+          <div className={styles.logo}>
+            <img 
+              src={appLogo} 
+              alt="Esperto PT Logo" 
+              className={styles.logoImage} 
+            />
+            <span>ESPERTO-<span className={styles.logoPlus}>PT</span></span>
+          </div>
+          <div className={styles.versionBadge}>
+            v{appVersion}
+          </div>
         </div>
 
-        {/* 2. Desktop Navigasyon Linkleri (GÜNCELLENDİ) */}
+        {/* ORTA KISIM: MENÜLER (Masaüstü) */}
         <div className={styles.navLinks}>
-          
           <NavLink to={basePath} className={getNavLinkClass} end>
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
           </NavLink>
 
-          {/* Admin'e Özel Linkler */}
           {userRole === 'admin' && (
             <>
               <NavLink to="/admin/coaches" className={getNavLinkClass}>
                 <Users size={20} />
                 <span>Koç Yönetimi</span>
               </NavLink>
+
+              {/* YENİ: Maaş Hesapla Linki */}
+              <NavLink to="/admin/payments" className={getNavLinkClass}>
+                <Calculator size={20} />
+                <span>Maaş Hesapla</span>
+              </NavLink>
+
               <NavLink to="/admin/approvals" className={getNavLinkClass}>
                 <CheckSquare size={20} />
                 <span>Onaylar</span>
@@ -69,10 +89,8 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
             </>
           )}
 
-          {/* Koç'a Özel Linkler (GÜNCELLENDİ) */}
           {userRole === 'coach' && (
             <>
-              {/* YENİ: Üyeler Linki */}
               <NavLink to={`${basePath}/members`} className={getNavLinkClass}>
                 <Users size={20} />
                 <span>Üyeler</span>
@@ -85,7 +103,7 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
           )}
         </div>
 
-        {/* 3. Kullanıcı Profili Alanı */}
+        {/* SAĞ KISIM: PROFİL */}
         <div className={styles.userProfile}>
           <span className={styles.userName}>
             {currentUser ? currentUser.username : 'Kullanıcı'}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
-import { User, Lock, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 
 import { db } from '../../firebase/firebaseConfig';
 import { doc } from 'firebase/firestore'; 
@@ -12,6 +12,9 @@ import type { DocumentData } from 'firebase/firestore';
 import { getDocWithCount } from '../../firebase/firestoreService'; 
 import { isValidInput } from '../../utils/securityUtils';
 import { useAuth } from '../../context/AuthContext';
+
+// Logo importu (Dosya yolunun src/assets/logo.png olduğundan emin olun)
+import appLogo from '../../assets/logo.png';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -31,9 +34,9 @@ const Login: React.FC = () => {
       setError(reason);
       sessionStorage.removeItem('logout_reason');
     }
-  }, []); //
+  }, []);
 
-  // findUserById (Yazım hatası düzeltildi)
+  // findUserById
   const findUserById = async (collectionName: string): Promise<DocumentData | null> => {
     try {
       const userDocRef = doc(db, collectionName, username); 
@@ -43,26 +46,24 @@ const Login: React.FC = () => {
         const userData = userDocSnap.data();
 
         if (userData.password === password) {
-          
           if (userData.isActive === false || userData.isActive === "false") {
             throw new Error("INACTIVE_ACCOUNT");
           }
-          
           return userData;
         }
       }
       return null;
-    } catch (error: any) { // DÜZELTME: 'a' harfi kaldırıldı
+    } catch (error: any) {
       console.error(`Error querying ${collectionName}:`, error);
       if (error.message === "INACTIVE_ACCOUNT") {
         throw error;
       }
       throw new Error("DB_ERROR");
     }
-  }; //
+  };
 
 
-  // handleSubmit (Değişiklik yok)
+  // handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -109,18 +110,26 @@ const Login: React.FC = () => {
         setError('Giriş yapılırken bir hata oluştu.');
       }
     }
-  }; //
+  };
 
-  // --- JSX (RENDER) KISMI (Değişiklik yok) ---
   return (
     <div className={styles.loginBox}>
+      
+      {/* LOGO ALANI */}
       <div className={styles.logo}>
-        <Sparkles size={40} className={styles.logoIcon} />
-        ESPERTO-<span className={styles.logoPlus}>PT</span>
+        <img 
+          src={appLogo} 
+          alt="Esperto PT Logo" 
+          className={styles.logoImage} 
+        />
+        <span>ESPERTO-<span className={styles.logoPlus}>PT</span></span>
       </div>
+      
       <h2 className={styles.title}>Yönetim Paneli Girişi</h2>
+      
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error}>{error}</div>}
+        
         <div className={styles.inputGroup}>
           <User className={styles.inputIcon} size={20} />
           <input
@@ -136,6 +145,7 @@ const Login: React.FC = () => {
             spellCheck={false}
           />
         </div>
+        
         <div className={styles.inputGroup}>
           <Lock className={styles.inputIcon} size={20} />
           <input
@@ -154,6 +164,7 @@ const Login: React.FC = () => {
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </div>
         </div>
+        
         <button 
           type="submit" 
           className={styles.button}

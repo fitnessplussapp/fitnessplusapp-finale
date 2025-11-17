@@ -35,7 +35,7 @@ interface ModalProps {
 }
 // -----------------
 
-// --- Yardımcı Fonksiyonlar (GÜNCELLENDİ) ---
+// --- Yardımcı Fonksiyonlar ---
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
 };
@@ -74,17 +74,17 @@ const ManagePackageModal: React.FC<ModalProps> = ({
 }) => {
   const isEditMode = mode === 'edit-package';
 
-  // State'ler
-  const [price, setPrice] = useState(packageData?.price || 0);
+  // State'ler (String olarak başlatıyoruz)
+  const [price, setPrice] = useState<string>('0');
   const [startDate, setStartDate] = useState(
     (packageData?.createdAt || new Date()).toISOString().split('T')[0]
   );
-  const [duration, setDuration] = useState(packageData?.duration || 30);
-  const [sessionCount, setSessionCount] = useState(packageData?.sessionCount || 12);
-  const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Pending'>(packageData?.paymentStatus || 'Paid');
-  const [dietitianSupport, setDietitianSupport] = useState(packageData?.dietitianSupport || false);
-  const [shareValue, setShareValue] = useState(packageData?.share?.value || 0);
-  const [shareType, setShareType] = useState<'TL' | '%'>(packageData?.share?.type || 'TL');
+  const [duration, setDuration] = useState<string>('30');
+  const [sessionCount, setSessionCount] = useState<string>('12');
+  const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Pending'>('Paid');
+  const [dietitianSupport, setDietitianSupport] = useState(false);
+  const [shareValue, setShareValue] = useState<string>('0');
+  const [shareType, setShareType] = useState<'TL' | '%'>('TL');
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,43 +95,51 @@ const ManagePackageModal: React.FC<ModalProps> = ({
 
   // useMemo (Finansal)
   const financials = useMemo(() => {
-    const currentShare: CoachShare = { value: shareValue, type: shareType };
-    return calculateFinancials(price, currentShare, sessionCount);
+    const numPrice = Number(price) || 0;
+    const numShareValue = Number(shareValue) || 0;
+    const numSessionCount = Number(sessionCount) || 0;
+
+    const currentShare: CoachShare = { value: numShareValue, type: shareType };
+    return calculateFinancials(numPrice, currentShare, numSessionCount);
   }, [price, shareValue, shareType, sessionCount]);
 
   // useMemo (Bitiş Tarihi)
   const calculatedEndDate = useMemo(() => {
     try {
       const start = new Date(startDate);
+      const numDuration = Number(duration) || 0;
+
       if (isNaN(start.getTime())) return null;
       const end = new Date(start.getTime());
-      end.setDate(start.getDate() + duration - 1);
+      end.setDate(start.getDate() + Math.max(0, numDuration - 1));
       return end;
     } catch {
       return null;
     }
   }, [startDate, duration]);
 
-  // useEffect (Form Reset)
+  // useEffect (Form Reset ve Veri Yükleme)
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && packageData) {
-        setPrice(packageData.price);
+        // Gelen sayısal verileri string'e çevirip state'e atıyoruz
+        setPrice(packageData.price.toString());
         setStartDate(packageData.createdAt.toISOString().split('T')[0]);
         setPaymentStatus(packageData.paymentStatus);
-        setDuration(packageData.duration);
-        setSessionCount(packageData.sessionCount || 12);
+        setDuration(packageData.duration.toString());
+        setSessionCount((packageData.sessionCount || 12).toString());
         setDietitianSupport(!!packageData.dietitianSupport);
-        setShareValue(packageData.share?.value || 0);
+        setShareValue((packageData.share?.value || 0).toString());
         setShareType(packageData.share?.type || 'TL');
       } else {
-        setPrice(0);
+        // Yeni kayıt için varsayılan değerler
+        setPrice('0');
         setStartDate(new Date().toISOString().split('T')[0]);
         setPaymentStatus('Paid');
-        setDuration(30);
-        setSessionCount(12);
+        setDuration('30');
+        setSessionCount('12');
         setDietitianSupport(false);
-        setShareValue(0);
+        setShareValue('0');
         setShareType('TL');
       }
       setError(null);
@@ -139,12 +147,20 @@ const ManagePackageModal: React.FC<ModalProps> = ({
   }, [isOpen, mode, packageData]);
 
 
-  // === handleSubmit (GÜNCELLENDİ) ===
+  // === handleSubmit ===
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (price <= 0 || duration <= 0 || sessionCount <= 0 || shareValue < 0) {
-      setError("Fiyat, süre, seans sayısı ve şirket payı 0 veya daha büyük olmalıdır.");
+    
+    // Sayıya çevir
+    const numPrice = price === '' ? 0 : Number(price);
+    const numDuration = duration === '' ? 0 : Number(duration);
+    const numSessionCount = sessionCount === '' ? 0 : Number(sessionCount);
+    const numShareValue = shareValue === '' ? 0 : Number(shareValue);
+
+    // Negatif kontrolü
+    if (numPrice < 0 || numDuration < 0 || numSessionCount < 0 || numShareValue < 0) {
+      setError("Fiyat, süre, seans sayısı ve şirket payı negatif olamaz.");
       return;
     }
     if (!calculatedEndDate) {
@@ -156,41 +172,37 @@ const ManagePackageModal: React.FC<ModalProps> = ({
     try {
       const parsedStartDate = new Date(startDate);
       const memberDocRef = doc(db, 'coaches', coachId, 'members', memberId);
-      const coachDocRef = doc(db, 'coaches', coachId); // YENİ: Koç referansı
-      const currentShare: CoachShare = { value: shareValue, type: shareType };
+      const coachDocRef = doc(db, 'coaches', coachId);
+      const currentShare: CoachShare = { value: numShareValue, type: shareType };
       const memberUpdatePayload: any = {
           packageEndDate: calculatedEndDate,
           packageStartDate: parsedStartDate,
       };
 
       if (isEditMode) {
-        // --- DÜZENLEME MODU (GÜNCELLENDİ) ---
+        // --- DÜZENLEME MODU ---
         
-        // 1. Eski companyCut'ı hesapla
         const oldShare = packageData?.share || { type: '%', value: 0 };
         const oldSessions = packageData?.sessionCount || 0;
         const oldPrice = packageData?.price || 0;
         const { companyCut: oldCompanyCut } = calculateFinancials(oldPrice, oldShare, oldSessions);
 
-        // 2. Yeni companyCut'ı al (zaten 'financials' içinde)
         const newCompanyCut = financials.companyCut;
-
-        // 3. Aradaki farkı hesapla
         const cutDifference = newCompanyCut - oldCompanyCut;
         
-        // 4. Paketi güncelle
         const packageDocRef = doc(memberDocRef, 'packages', packageData!.id);
         const memberSnap = await getDocWithCount(memberDocRef);
         const currentRemaining = memberSnap.data()?.currentSessionCount || 0;
         const oldTotal = packageData?.sessionCount || 0;
         const sessionsUsed = Math.max(0, oldTotal - currentRemaining);
-        const newTotal = sessionCount;
+        
+        const newTotal = numSessionCount;
         const newRemaining = Math.max(0, newTotal - sessionsUsed);
         
         const packagePayload: any = {
-          price: price,
+          price: numPrice,
           createdAt: parsedStartDate,
-          duration: duration,
+          duration: numDuration,
           sessionCount: newTotal,
           paymentStatus: paymentStatus,
           dietitianSupport: dietitianSupport,
@@ -199,11 +211,11 @@ const ManagePackageModal: React.FC<ModalProps> = ({
         };
         await updateDocWithCount(packageDocRef, packagePayload);
         
-        // 5. Üyeyi güncelle
+        // Üye güncelle
         memberUpdatePayload.currentSessionCount = newRemaining;
         await updateDocWithCount(memberDocRef, memberUpdatePayload);
         
-        // 6. YENİ: Koçun companyCut kazancını fark kadar güncelle
+        // Koç kazancı güncelle
         if (cutDifference !== 0) {
             await updateDocWithCount(coachDocRef, {
                 companyCut: increment(cutDifference)
@@ -211,17 +223,17 @@ const ManagePackageModal: React.FC<ModalProps> = ({
         }
 
       } else { 
-        // --- YENİ PAKET EKLEME MODU (Değişiklik yok) ---
+        // --- YENİ PAKET EKLEME MODU ---
         
         const memberSnap = await getDocWithCount(memberDocRef);
         const currentTotal = memberSnap.data()?.totalPackages || 0;
         const newPackageNumber = currentTotal + 1;
 
         const packagePayload = {
-          price: price,
+          price: numPrice,
           createdAt: parsedStartDate,
-          duration: duration,
-          sessionCount: sessionCount,
+          duration: numDuration,
+          sessionCount: numSessionCount,
           paymentStatus: paymentStatus,
           dietitianSupport: dietitianSupport,
           approvalStatus: 'Approved',
@@ -231,11 +243,10 @@ const ManagePackageModal: React.FC<ModalProps> = ({
         };
         await addDoc(collection(memberDocRef, 'packages'), packagePayload);
         
-        memberUpdatePayload.currentSessionCount = sessionCount;
+        memberUpdatePayload.currentSessionCount = numSessionCount;
         memberUpdatePayload.totalPackages = increment(1);
         await updateDocWithCount(memberDocRef, memberUpdatePayload);
 
-        // (financials.companyCut zaten 'useMemo'dan doğru hesaplanıyor)
         await updateDocWithCount(coachDocRef, {
             companyCut: increment(financials.companyCut)
         });
@@ -249,7 +260,6 @@ const ManagePackageModal: React.FC<ModalProps> = ({
     }
   };
 
-  // --- JSX (RENDER) BÖLÜMÜ ---
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
 
@@ -262,11 +272,20 @@ const ManagePackageModal: React.FC<ModalProps> = ({
             <label htmlFor="m-price">Paket Fiyatı (TL)</label>
             <div className={formStyles.inputWrapper}>
                 <DollarSign size={20} className={formStyles.inputIcon} />
-                <input id="m-price" type="number" value={price === 0 ? '' : price} onChange={(e) => setPrice(Number(e.target.value) || 0)} placeholder="0" className={formStyles.input} min="0" required />
+                <input 
+                  id="m-price" 
+                  type="number" 
+                  value={price} 
+                  onChange={(e) => setPrice(e.target.value)} 
+                  placeholder="0" 
+                  className={formStyles.input} 
+                  min="0" 
+                  required 
+                />
             </div>
         </div>
         
-        {/* Şirket Payı (Label güncellendi) */}
+        {/* Şirket Payı */}
         <div className={formStyles.inputGroup}>
           <label htmlFor="m-shareValue">Şirketin Alacağı Pay (TL ise Seans Başı, % ise Toplamdan)</label>
           <div className={formStyles.compoundInputWrapper}>
@@ -275,10 +294,10 @@ const ManagePackageModal: React.FC<ModalProps> = ({
               id="m-shareValue"
               type="number"
               step="any" 
-              placeholder="Değer girin (Örn: 20)"
+              placeholder="0"
               className={formStyles.input}
-              value={shareValue === 0 ? '' : shareValue}
-              onChange={(e) => setShareValue(Number(e.target.value) || 0)}
+              value={shareValue}
+              onChange={(e) => setShareValue(e.target.value)}
               disabled={isLoading}
               min="0"
               required
@@ -303,22 +322,39 @@ const ManagePackageModal: React.FC<ModalProps> = ({
             </div>
           </div>
         </div>
-        {/* ----------------------------- */}
-
+        
         {/* Süre / Seans */}
         <div className={formStyles.gridGroup} style={{ gridTemplateColumns: '1fr 1fr' }}>
             <div className={formStyles.inputGroup}>
                 <label htmlFor="m-duration">Süre (Gün)</label>
                 <div className={formStyles.inputWrapper}>
                     <BarChart size={20} className={formStyles.inputIcon} />
-                    <input id="m-duration" type="number" value={duration === 0 ? '' : duration} onChange={(e) => setDuration(Number(e.target.value) || 0)} placeholder="30" className={formStyles.input} min="1" required />
+                    <input 
+                      id="m-duration" 
+                      type="number" 
+                      value={duration} 
+                      onChange={(e) => setDuration(e.target.value)} 
+                      placeholder="30" 
+                      className={formStyles.input} 
+                      min="0" 
+                      required 
+                    />
                 </div>
             </div>
             <div className={formStyles.inputGroup}>
                 <label htmlFor="m-sessionCount">Seans Sayısı</label>
                 <div className={formStyles.inputWrapper}>
                     <Hash size={20} className={formStyles.inputIcon} />
-                    <input id="m-sessionCount" type="number" value={sessionCount === 0 ? '' : sessionCount} onChange={(e) => setSessionCount(Number(e.target.value) || 0)} placeholder="12" className={formStyles.input} min="1" required />
+                    <input 
+                      id="m-sessionCount" 
+                      type="number" 
+                      value={sessionCount} 
+                      onChange={(e) => setSessionCount(e.target.value)} 
+                      placeholder="12" 
+                      className={formStyles.input} 
+                      min="0" 
+                      required 
+                    />
                 </div>
             </div>
         </div>
@@ -329,7 +365,7 @@ const ManagePackageModal: React.FC<ModalProps> = ({
             <div className={`${formStyles.summaryItem} ${formStyles.positive}`}><span>Koça Kalan:</span><strong>{formatCurrency(financials.coachCut)}</strong></div>
         </div>
 
-        {/* Diğer form elemanları (Değişiklik yok) */}
+        {/* Diğer form elemanları */}
         <div className={formStyles.inputGroup}>
           <label htmlFor="m-startDate">Paket Başlangıç Tarihi</label>
           <div className={formStyles.inputWrapper}>

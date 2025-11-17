@@ -1,0 +1,46 @@
+name: Bump Version on Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-version:
+    # Sonsuz döngüyü engellemek için [skip ci] kontrolü
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump Version
+        run: |
+          # package.json ve package-lock.json güncellenir
+          npm version patch --no-git-tag-version
+
+      - name: Commit and Push Changes
+        run: |
+          # YENİ: package-lock.json'ı da ekliyoruz (Çakışmayı önler)
+          git add package.json package-lock.json
+          
+          # Versiyonu değişkene alıp temiz bir şekilde commit mesajına ekliyoruz
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+          
+          git push
