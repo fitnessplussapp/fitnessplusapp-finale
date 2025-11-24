@@ -1,276 +1,345 @@
 /* src/pages/Coach/CoachMemberDetails.module.css */
 
-.detailPage {
-  padding: 2rem;
-  max-width: 1000px;
+.pageContainer {
+  animation: fadeIn 0.4s ease-out;
+  padding-top: 0.5rem;
+  padding-bottom: 3rem;
+  max-width: 1400px;
   margin: 0 auto;
-  animation: fadeIn 0.3s ease-out;
+}
+
+/* --- HEADER --- */
+.headerWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.profileSummary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatarCircle {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2A2A2A 0%, #1A1A1A 100%);
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(129, 201, 189, 0.1);
+}
+
+.memberIdentity {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.memberStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+.activeStatus { color: #22c55e; }
+.passiveStatus { color: #ef4444; }
+
+/* --- STATS GRID --- */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.statCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: transform 0.2s;
+}
+.statCard:hover {
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.statValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.statSubtext {
+  font-size: 0.7rem;
+  color: #555;
+}
+
+/* --- MAIN LAYOUT --- */
+.mainContentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* --- SOL: PROFİL KARTI --- */
+.profileCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  height: fit-content;
+}
+
+.sectionTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #222;
+}
+.infoRow:last-child { border-bottom: none; margin: 0; padding: 0; }
+
+.infoIconBox {
+  width: 32px;
+  height: 32px;
+  background-color: #222;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex-grow: 1;
+}
+
+.infoLabel {
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.infoValue {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+.actionLink:hover { text-decoration: underline; }
+
+/* --- SAĞ: PAKETLER --- */
+.packagesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.packagesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.packageCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.activePackageBorder {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-bg-light);
+}
+
+.packageCardHeader {
+  background-color: #202020;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.packageTitleGroup { display: flex; flex-direction: column; }
+
+.packageTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.activeBadge {
+  font-size: 0.65rem;
+  background-color: var(--primary-color);
+  color: #121212;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.packageMeta {
+  font-size: 0.75rem;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.packageBody { padding: 1rem; }
+
+/* Etiketler */
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background-color: var(--primary-bg-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 4px;
+  color: var(--primary-color);
+}
+
+/* İlerleme */
+.progressSection { margin-bottom: 1rem; }
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background-color: #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+/* Alt Bilgi */
+.packageFooter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+.footerItem { display: flex; flex-direction: column; }
+.footerLabel { font-size: 0.7rem; color: #666; }
+.footerValue { font-size: 0.85rem; color: var(--text-main); font-weight: 600; }
+.income { color: #22c55e; }
+
+/* Aksiyonlar */
+.cardActions { display: flex; gap: 0.4rem; }
+.iconButton {
+  background: #333;
+  border: 1px solid #444;
+  color: #AAA;
+  padding: 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.iconButton:hover { background: #444; color: #FFF; }
+.deleteBtn:hover { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; }
+
+/* --- RESPONSIVE --- */
+@media (min-width: 768px) {
+  .headerWrapper {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .statsGrid { grid-template-columns: repeat(4, 1fr); }
+  .mainContentGrid {
+    grid-template-columns: 300px 1fr; 
+    align-items: start;
+  }
+  .packageFooter { grid-template-columns: repeat(4, 1fr); }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* 1. Başlık ve Geri Butonu */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #2A2A2A;
-  flex-wrap: wrap; /* Mobilde alt alta gelmesi için */
-  gap: 1rem;
-}
-.memberName {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin: 0;
-}
-.memberMeta {
-  font-size: 0.9rem;
-  color: #A0A0A0;
-}
-/* DURUM RENKLERİ */
-.statusActive {
-  color: #2ecc71;
-  font-weight: 600;
-}
-.statusPassive {
-  color: #e74c3c;
-  font-weight: 600;
-}
-.statusPending { /* BEYAZ EKRAN ÇÖZÜMÜ */
-  color: #f39c12;
-  font-weight: 600;
-}
-
-.backButton {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: #2A2A2A;
-  color: #E0E0E0;
-  border: 1px solid #444;
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  flex-shrink: 0; /* Küçülmesin */
-}
-.backButton:hover {
-  background-color: #333;
-  border-color: #D4AF37;
-}
-
-/* 2. Üst Kartlar */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-.statCard {
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-.statTitle {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #A0A0A0;
-  margin-bottom: 0.75rem;
-}
-.statValue {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #FFFFFF;
-  margin-bottom: 1rem;
-}
-.statFooter {
-  font-size: 0.85rem;
-  color: #888;
-  margin-top: 1rem;
-  display: block;
-}
-.dietitianStatus {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 500;
-  margin-top: 1.5rem;
-}
-.progressBar {
-  height: 8px;
-  background-color: #2A2A2A;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-/* 3. Paket Bölümü */
-.packageSection {
-  margin-top: 2rem;
-}
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.sectionTitle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #E0E0E0;
-}
-.packageList {
-  display: grid;
-  gap: 1.5rem;
-}
-.noPackages {
-  color: #888;
-  font-style: italic;
-  padding: 1rem;
-  text-align: center;
-}
-
-/* 4. Paket Kartı (Tümü için temel) */
-.packageCard {
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-}
-.packageCard:hover {
-  transform: translateY(-4px);
-  border-color: #555;
-}
-.packageHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.packageTitle {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #FFFFFF;
-}
-.packageDate {
-  font-size: 0.9rem;
-  color: #A0A0A0;
-}
-.packageBody {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.packagePrice {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #E0E0E0;
-}
-.coachEarning {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #2ecc71; /* Yeşil kazanç */
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.packageSession {
-  font-size: 0.9rem;
-  color: #A0A0A0;
-  background-color: #222;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  display: inline-block;
-  margin-bottom: 1rem;
-}
-.packageFooter {
-  font-size: 0.9rem;
-  color: #A0A0A0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #2A2A2A;
-}
-
-/* 5. Ödeme Durumları */
-.paid {
-  color: #2ecc71;
-  font-weight: 500;
-}
-.pending {
-  color: #f39c12;
-  font-weight: 500;
-}
-
-/* 6. PAKET TİPLERİ (İSTEĞİNİZİN ÇÖZÜMÜ) */
-
-/* A. Onay Bekleyen Paket */
-.pendingCard {
-  border-left: 4px solid #f39c12; /* Turuncu uyarı çizgisi */
-  background-color: #2a2a2a;
-}
-.pendingBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #f39c12;
-  color: #111;
-  font-weight: 600;
-  font-size: 0.9rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-.pendingCard .packageTitle {
-  color: #f39c12;
-}
-
-/* B. Mevcut (Altın) Paket */
-.currentPackageCard {
-  border: 1px solid #D4AF37;
-  box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
-}
-.currentPackageCard .packageTitle {
-  color: #D4AF37;
-}
-
-/* Yükleme/Hata Durumları */
-.loadingContainer, .errorContainer {
-  padding: 4rem 2rem;
-  text-align: center;
-  color: #A0A0A0;
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-}
-.errorContainer {
-  color: #e74c3c;
-}
-.spinner {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }

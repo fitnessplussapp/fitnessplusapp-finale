@@ -1,438 +1,241 @@
 /* src/pages/Admin/CoachManagement/CoachManagement.module.css */
 
 .coachPage {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
   padding-top: 0.5rem; 
+  padding-bottom: 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* ======================================== */
-/* 1. BAŞLIK & EKLE BUTONU */
-/* ======================================== */
+/* --- HEADER --- */
 .header {
   display: flex;
   flex-wrap: wrap; 
   justify-content: space-between; 
-  align-items: center;
-  gap: 1rem; 
+  align-items: flex-end;
+  gap: 0.75rem; 
   margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #2A2A2A;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
 }
+
 .pageTitle {
-  font-size: 1.5rem;
+  font-size: 1.5rem; /* 1.75 -> 1.5 */
   font-weight: 700;
-  color: #E0E0E0;
+  color: var(--text-main);
   margin: 0;
+  line-height: 1.2;
 }
+
 .pageSubtitle {
-  font-size: 0.9rem;
-  color: #A0A0A0;
-  margin-top: 0.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: 0.2rem;
 }
+
 .addButton {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: transparent;
-  border: 1px solid #D4AF37;
-  color: #D4AF37;
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
+  gap: 0.4rem;
+  background-color: var(--primary-color);
+  border: none;
+  color: #121212;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px var(--primary-bg-light);
 }
 .addButton:hover {
-  background-color: rgba(212, 175, 55, 0.1); 
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.1);
-}
-.addButton svg {
-  margin-top: -1px;
-}
-.backButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: #2A2A2A; 
-  border: 1px solid #333;
-  color: #A0A0A0; 
-  border-radius: 8px;
-  padding: 0.6rem; 
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-.backButton:hover {
-  background-color: #333;
-  color: #FFFFFF;
-}
-.backButton .buttonText {
-  display: none;
-}
-.listContainer {
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  overflow: hidden; 
-}
-.listHeader {
-  display: flex;
-  flex-wrap: wrap; 
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #2A2A2A;
-}
-.listTitle {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #E0E0E0;
-  margin: 0;
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
-/* ======================================== */
-/* 2. KOÇ LİSTESİ (CoachManagement) */
-/* ======================================== */
-.listContent {
-  padding: 0;
-}
-.coachItem {
+/* --- GRID LAYOUT --- */
+.coachGrid {
   display: grid;
-  grid-template-columns: 1fr auto; 
-  grid-template-rows: auto auto; 
-  grid-template-areas: 
-    "name   status"
-    "actions actions";
-  gap: 0.5rem 1rem; 
-  align-items: center;
-  padding: 1rem; 
-  border-bottom: 1px solid #2A2A2A;
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  grid-template-columns: 1fr; 
+  gap: 1rem; /* 1.5rem -> 1rem */
 }
-.coachItem:last-child {
-  border-bottom: none; 
-}
-.coachItem:hover {
-  background-color: #252525;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-.coachInfo {
-  grid-area: name;
-  overflow: hidden; 
-  align-self: center;
-}
-.coachDetails {
+
+/* --- KOÇ KARTI --- */
+.coachCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem; /* 1.5rem -> 1rem */
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.coachCard:hover {
+  border-color: #444;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Kart Header */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.coachIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  width: 44px; /* 56 -> 44 */
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #333 0%, #222 100%);
+  border: 2px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.coachInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.coachName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.1rem;
+  text-transform: capitalize;
+}
+
+.statusBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+.statusActive {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.statusPassive {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* İstatistikler */
+.cardStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #252525;
+  border-bottom: 1px solid #252525;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
   gap: 0.1rem;
 }
-.coachName {
-  font-size: 1.1rem; 
-  font-weight: 600;
-  color: #E0E0E0;
-  text-transform: capitalize;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.coachStats {
+
+.statLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  flex-wrap: wrap; 
-  gap: 0.5rem 1rem; 
-  font-size: 0.85rem;
-  color: #888;
-  margin-top: 0.35rem; 
+  gap: 0.3rem;
 }
-.coachStats span {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem; 
+
+.statValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
-.coachStats svg {
-  width: 14px;
-  height: 14px;
-  color: #777;
+.highlight {
+  color: var(--primary-color);
 }
-.coachStatus {
-  grid-area: status;
-  justify-self: end;
-  align-self: center;
-}
-.coachActions {
-  grid-area: actions;
-  grid-column: 1 / -1; 
+
+/* Aksiyonlar */
+.cardActions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr; 
-  gap: 0.75rem; 
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: auto; 
 }
 
 .actionButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem; 
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #333;
-  border: 1px solid #444;
-  color: #E0E0E0;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 500;
-  font-size: 0.8rem;
-}
-.actionButtonText {
-  display: block;
-}
-.actionButton:hover {
-  background-color: #444;
-  color: #FFFFFF;
-}
-.primaryActionButton {
-  background-color: #D4AF37;
-  border-color: #D4AF37;
-  color: #121212;
-  font-weight: 600;
-}
-.primaryActionButton:hover {
-  background-color: #E6C25E;
-  border-color: #E6C25E;
-  color: #121212;
-}
-
-/* ======================================== */
-/* 3. MASAÜSTÜ İYİLEŞTİRMESİ (768px+) */
-/* ======================================== */
-@media (min-width: 768px) {
-  .backButton {
-    padding: 0.6rem 1rem;
-  }
-  .backButton .buttonText {
-    display: block;
-  }
-  .coachItem {
-    grid-template-columns: 1fr auto auto; 
-    grid-template-areas: "name status actions";
-    grid-template-rows: 1fr;
-    gap: 0 1.5rem; 
-    padding: 1rem 1.5rem;
-  }
-  .coachActions {
-    grid-area: actions;
-    grid-column: auto; 
-    display: flex;
-    gap: 0.75rem; 
-  }
-  .actionButtonText {
-    display: block;
-  }
-  .actionButton {
-     font-size: 0.9rem;
-  }
-}
-
-/* ======================================== */
-/* 4. COACH DETAILS (ÜYE LİSTESİ) STİLLERİ */
-/* ======================================== */
-.memberItemClickable {
   cursor: pointer;
-  grid-template-areas: 
-    "name name"
-    "actions actions";
-  gap: 0.75rem 1rem; 
-}
-.isExpiredMember {
-  background-color: #161616;
-  opacity: 0.7;
-}
-.isExpiredMember:hover {
-  background-color: #222;
-  opacity: 1;
-}
-.coachItem .coachDetails {
-  flex-direction: column; 
-  flex-wrap: nowrap; 
-  align-items: flex-start; 
-  gap: 0.35rem; 
-}
-.coachPackageDates {
-  font-size: 0.85rem;
-  color: #aaa;
-  font-weight: 500;
-  background-color: #252525;
-  padding: 0.2rem 0.6rem;
-  border-radius: 5px;
+  transition: all 0.2s;
+  text-decoration: none;
   border: 1px solid #333;
+  background-color: #222;
+  color: #AAA;
 }
-.isExpiredMember .coachPackageDates {
-  background-color: #111;
-  color: #777;
-  border-color: #222;
-}
-.coachItem .coachActions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-.memberPackageProgress {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-grow: 1; 
-}
-.progressBarContainer {
-  flex-grow: 1; 
-  height: 8px;
+
+.actionButton:hover {
   background-color: #333;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.progressBarFill {
-  height: 100%;
-  background-color: #D4AF37; 
-  border-radius: 4px;
-  transition: width 0.5s ease-out;
-}
-.isExpiredMember .progressBarFill {
-  background-color: #444;
-}
-.remainingDays {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #E0E0E0; 
-  flex-shrink: 0; 
-  width: 90px; 
-}
-.isExpiredMember .remainingDays {
-  color: #777;
+  color: #FFF;
+  border-color: #555;
 }
 
-/* GÜNCELLENDİ: Sil butonu artık görünür */
-.memberDeleteButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6rem; 
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: transparent;
-  border: 1px solid transparent;
-  color: #888;
-  flex-shrink: 0; 
+.primaryBtn {
+  background-color: var(--primary-bg-light);
+  border-color: var(--primary-border);
+  color: var(--primary-color);
 }
-.memberDeleteButton:hover {
-  background-color: rgba(239, 68, 68, 0.1); /* Kırmızı arkaplan */
-  color: #ef4444;
-  border-color: #ef4444;
-}
-.chevronIcon {
-  color: #555;
-  transition: color 0.2s ease;
-  flex-shrink: 0;
-}
-.memberItemClickable:hover .chevronIcon {
-  color: #D4AF37;
+.primaryBtn:hover {
+  background-color: var(--primary-color);
+  color: #121212;
 }
 
-/* ======================================== */
-/* 5. Onay Modalı Stilleri (Değişiklik yok) */
-/* ======================================== */
+/* --- MEDYA SORGULARI --- */
+@media (min-width: 768px) {
+  .coachGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .coachGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1400px) {
+  .coachGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
 .confirmModalBody {
+  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 1.5rem;
-}
-.confirmIcon {
-  color: #D4AF37;
-}
-.confirmModalBody p {
-  font-size: 1rem;
-  color: #A0A0A0;
-  line-height: 1.6;
-}
-.confirmModalBody strong {
-  color: #E0E0E0;
-  font-weight: 600;
-}
-.confirmActions {
-  display: flex;
   gap: 1rem;
-  width: 100%;
-}
-.confirmButton {
-  flex-grow: 1;
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #D4AF37;
-  color: #121212;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.confirmButton:hover {
-  background-color: #E6C25E;
-}
-.cancelButton {
-  flex-grow: 1;
-  padding: 0.8rem 1rem;
-  border: 1px solid #444;
-  border-radius: 8px;
-  background-color: #2A2A2A;
-  color: #A0A0A0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.cancelButton:hover {
-  background-color: #333;
-  color: #FFFFFF;
-}
-
-/* ======================================== */
-/* 6. YENİ: Ödeme Durumu Stilleri (CoachDetails için) */
-/* ======================================== */
-.paymentStatus {
-  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-weight: 500;
 }
-.paymentStatus.paid {
-  color: #22c55e;
-}
-.paymentStatus.paid svg {
-  color: #22c55e;
-}
-.paymentStatus.partial {
-  color: #f59e0b;
-}
-.paymentStatus.partial svg {
-  color: #f59e0b;
-}
-.paymentStatus.unpaid {
-  color: #ef4444;
-}
-.paymentStatus.unpaid svg {
-  color: #ef4444;
-}
-.paymentStatus.noPackage {
-  color: #888;
-}
-.paymentStatus.noPackage svg {
-  color: #888;
+.confirmIcon { color: #ef4444; }
+.confirmText { font-size: 0.9rem; color: #ccc; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,15 +1,19 @@
 // src/pages/Admin/CoachManagement/members/AddNewMemberModal.tsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Calendar, DollarSign, User, Check, BarChart, Hash, TrendingUp } from 'lucide-react';
+import { 
+  Loader2, Calendar, DollarSign, User, Check, BarChart, 
+  Hash, TrendingUp, Layers, Phone, Mail
+} from 'lucide-react';
 import Modal from '../../../../components/Modal/Modal';
 import formStyles from '../../../../components/Form/Form.module.css';
 
-import { setDocWithCount, updateDocWithCount } from '../../../../firebase/firestoreService';
+import { setDocWithCount, updateDocWithCount, getSystemDefinitions } from '../../../../firebase/firestoreService';
+import type { SystemDefinition } from '../../../../firebase/firestoreService';
+
 import { db } from '../../../../firebase/firebaseConfig';
 import { doc, collection, addDoc, serverTimestamp, increment } from 'firebase/firestore'; 
 
-// --- Tipler ---
 interface CoachShare {
   value: number;
   type: 'TL' | '%';
@@ -20,9 +24,7 @@ interface ModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-// -----------------
 
-// --- Yardımcı Fonksiyonlar ---
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
 };
@@ -37,16 +39,12 @@ const calculateFinancials = (
 } => {
   let companyCut = 0;
   let coachCut = price;
-  
   if (coachShare && coachShare.value > 0) {
     const shareValue = coachShare.value;
-    
     if (coachShare.type === 'TL') {
-      // Şirket payı = (Seans Başı TL) * (Toplam Seans)
       companyCut = shareValue * sessionCount; 
       coachCut = Math.max(0, price - companyCut);
     } else {
-      // Şirket payı = Toplam Fiyat * Yüzde
       companyCut = price * (shareValue / 100); 
       coachCut = price - companyCut;
     }
@@ -54,18 +52,14 @@ const calculateFinancials = (
   return { companyCut, coachCut };
 };
 
-const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-};
-// -----------------------------
-
-
 const AddNewMemberModal: React.FC<ModalProps> = ({ 
     isOpen, coachId, onClose, onSuccess 
 }) => {
     
-    // State'ler (Inputlar için String kullanıyoruz ki silinebilsin)
     const [name, setName] = useState(''); 
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [email, setEmail] = useState('');
+
     const [price, setPrice] = useState<string>('0');
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [duration, setDuration] = useState<string>('30');
@@ -77,28 +71,27 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
     
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Dinamik Alanlar (Array)
+    const [definitions, setDefinitions] = useState<SystemDefinition[]>([]);
+    const [dynamicValues, setDynamicValues] = useState<{ [key: string]: string[] }>({});
+
     const title = 'Yeni Üye ve İlk Paket Kaydı';
 
-    // useMemo (Finansal Hesaplama)
     const financials = useMemo(() => {
-        // String değerleri hesaplama için sayıya çeviriyoruz
         const numPrice = Number(price) || 0;
         const numShareValue = Number(shareValue) || 0;
         const numSessionCount = Number(sessionCount) || 0;
-
         const currentShare: CoachShare = { value: numShareValue, type: shareType };
         return calculateFinancials(numPrice, currentShare, numSessionCount); 
     }, [price, shareValue, shareType, sessionCount]);
 
-    // useMemo (Bitiş Tarihi)
     const calculatedEndDate = useMemo(() => {
         try {
             const start = new Date(startDate);
             const numDuration = Number(duration) || 0;
-
             if (isNaN(start.getTime())) return null;
             const end = new Date(start.getTime());
-            // Duration 0 ise bitiş tarihi başlangıç tarihiyle aynı olabilir
             end.setDate(start.getDate() + Math.max(0, numDuration - 1)); 
             return end;
         } catch {
@@ -106,10 +99,11 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
         }
     }, [startDate, duration]);
 
-    // useEffect (Form Reset)
     useEffect(() => {
         if (isOpen) {
             setName('');
+            setPhoneNumber(''); 
+            setEmail('');       
             setPrice('0'); 
             setStartDate(new Date().toISOString().split('T')[0]);
             setDuration('30');
@@ -118,36 +112,52 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
             setDietitianSupport(true);
             setShareValue('0'); 
             setShareType('TL'); 
+            setDynamicValues({}); 
             setError(null);
+
+            const fetchDefs = async () => {
+                const allDefs = await getSystemDefinitions();
+                const memberDefs = allDefs.filter(d => d.targets && d.targets.includes('member'));
+                setDefinitions(memberDefs);
+            };
+            fetchDefs();
         }
     }, [isOpen]);
 
-    // === handleSubmit ===
+    const toggleDynamicValue = (defId: string, itemValue: string) => {
+        setDynamicValues(prev => {
+        const currentList = prev[defId] || [];
+        if (currentList.includes(itemValue)) {
+            return { ...prev, [defId]: currentList.filter(i => i !== itemValue) };
+        } else {
+            return { ...prev, [defId]: [...currentList, itemValue] };
+        }
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         
-        // String değerleri sayıya çevirerek işlem yap
         const numPrice = price === '' ? 0 : Number(price);
         const numDuration = duration === '' ? 0 : Number(duration);
         const numSessionCount = sessionCount === '' ? 0 : Number(sessionCount);
         const numShareValue = shareValue === '' ? 0 : Number(shareValue);
 
         if (!coachId) {
-            setError("Koç ID'si bulunamadı. Sayfayı yenileyin.");
-            return;
-        }
-        // Sadece NEGATİF değerleri engelle (0 serbest)
-        if (numPrice < 0 || numDuration < 0 || numSessionCount < 0 || numShareValue < 0) {
-            setError("Fiyat, süre, seans sayısı ve şirket payı negatif olamaz.");
+            setError("Koç ID'si bulunamadı.");
             return;
         }
         if (!name.trim()) {
-            setError("Yeni üye için isim alanı boş bırakılamaz.");
+            setError("İsim boş olamaz.");
+            return;
+        }
+        if (!phoneNumber.trim()) {
+            setError("Telefon numarası zorunludur.");
             return;
         }
         if (!calculatedEndDate) {
-            setError("Geçerli bir başlangıç tarihi seçin.");
+            setError("Tarih hesaplanamadı.");
             return;
         }
         
@@ -157,14 +167,16 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
             const parsedStartDate = new Date(startDate);
             const newMemberRef = doc(collection(db, 'coaches', coachId, 'members'));
 
-            // 1. ÜYE PAYLOAD
+            // 1. ÜYE PAYLOAD 
             const memberPayload = {
                 name: name.trim(),
+                phoneNumber: phoneNumber.trim(),
+                email: email.trim(),
                 packageStartDate: parsedStartDate,
                 packageEndDate: calculatedEndDate,
                 totalPackages: 1, 
                 currentSessionCount: numSessionCount,
-                createdAt: serverTimestamp(),
+                createdAt: serverTimestamp()
             };
             
             // 2. PAKET PAYLOAD
@@ -181,24 +193,21 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                 share: {
                     value: numShareValue,
                     type: shareType
-                } as CoachShare
+                } as CoachShare,
+                customFields: dynamicValues
             };
 
-            // 3. DB İşlemleri
             await setDocWithCount(newMemberRef, memberPayload);
             await addDoc(collection(newMemberRef, 'packages'), packagePayload);
-            
-            // 4. KOÇ GÜNCELLEMESİ
-            const coachDocRef = doc(db, 'coaches', coachId);
-            await updateDocWithCount(coachDocRef, {
+            await updateDocWithCount(doc(db, 'coaches', coachId), {
                 totalMembers: increment(1),
                 companyCut: increment(financials.companyCut)
             });
             
             onSuccess();
         } catch (err: any) {
-            console.error("Yeni üye kaydı sırasında hata:", err);
-            setError(`İşlem başarısız oldu: ${err.message}`);
+            console.error("Hata:", err);
+            setError(`Hata: ${err.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -206,155 +215,139 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
-            
             {error && <div className={formStyles.error}>{error}</div>}
-            
             <form onSubmit={handleSubmit} className={formStyles.form}>
                 
                 {/* Üye Adı */}
                 <div className={formStyles.inputGroup}>
-                   <label htmlFor="name">Üye Adı Soyadı</label>
+                   <label>Üye Adı Soyadı *</label>
                    <div className={formStyles.inputWrapper}>
-                       <User size={20} className={formStyles.inputIcon} />
-                       <input 
-                           id="name" 
-                           type="text" 
-                           value={name} 
-                           onChange={(e) => setName(e.target.value)} 
-                           placeholder="Üye adı soyadı" 
-                           className={formStyles.input} 
-                           required 
-                       />
+                       <User size={18} className={formStyles.inputIcon} />
+                       <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={formStyles.input} required placeholder="Ad Soyad" />
                    </div>
                 </div>
-                
-                {/* Paket Fiyatı */}
-                <div className={formStyles.inputGroup}>
-                    <label htmlFor="price">Paket Fiyatı (TL)</label>
-                    <div className={formStyles.inputWrapper}>
-                        <DollarSign size={20} className={formStyles.inputIcon} />
-                        {/* type="number" kalsa da onChange string alacak */}
-                        <input 
-                          id="price" 
-                          type="number" 
-                          value={price} 
-                          onChange={(e) => setPrice(e.target.value)} 
-                          placeholder="0" 
-                          className={formStyles.input} 
-                          min="0" 
-                          required 
-                        />
+
+                {/* İletişim */}
+                <div className={formStyles.gridGroup} style={{ gridTemplateColumns: '1fr 1fr' }}>
+                    <div className={formStyles.inputGroup}>
+                        <label>Telefon *</label>
+                        <div className={formStyles.inputWrapper}>
+                            <Phone size={18} className={formStyles.inputIcon} />
+                            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className={formStyles.input} required placeholder="0555..." />
+                        </div>
+                    </div>
+                    <div className={formStyles.inputGroup}>
+                        <label>E-posta</label>
+                        <div className={formStyles.inputWrapper}>
+                            <Mail size={18} className={formStyles.inputIcon} />
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={formStyles.input} placeholder="Opsiyonel" />
+                        </div>
                     </div>
                 </div>
 
-                {/* Şirket Payı */}
+                {/* Dinamik Alanlar */}
+                {definitions.length > 0 && (
+                  <div style={{ marginBottom: '1.5rem', borderBottom: '1px dashed var(--border-color)', paddingBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <h4 style={{ color: 'var(--primary-color)', fontSize: '0.85rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Layers size={16} /> Paket Özellikleri
+                    </h4>
+                    {definitions.map(def => (
+                        <div key={def.id} className={formStyles.inputGroup}>
+                            <label>{def.title}</label>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {def.items.map((item, idx) => {
+                                    const isSelected = dynamicValues[def.id]?.includes(item);
+                                    return (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => toggleDynamicValue(def.id, item)}
+                                            style={{
+                                                background: isSelected ? 'rgba(129, 201, 189, 0.15)' : 'var(--bg-input)',
+                                                border: isSelected ? '1px solid var(--primary-color)' : '1px solid #333',
+                                                color: isSelected ? 'var(--primary-color)' : 'var(--text-muted)',
+                                                padding: '0.3rem 0.6rem',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            {isSelected && <Check size={12} />}
+                                            {item}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                  </div>
+                )}
+                
                 <div className={formStyles.inputGroup}>
-                  <label htmlFor="shareValue">Şirketin Alacağı Pay (TL ise Seans Başı, % ise Toplamdan)</label>
+                    <label>Paket Fiyatı (TL)</label>
+                    <div className={formStyles.inputWrapper}>
+                        <DollarSign size={18} className={formStyles.inputIcon} />
+                        <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className={formStyles.input} min="0" required />
+                    </div>
+                </div>
+
+                <div className={formStyles.inputGroup}>
+                  <label>Şirketin Alacağı Pay</label>
                   <div className={formStyles.compoundInputWrapper}>
                     <TrendingUp size={18} className={formStyles.inputIcon} />
-                    <input
-                      id="shareValue"
-                      type="number"
-                      step="any" 
-                      placeholder="0"
-                      className={formStyles.input}
-                      value={shareValue}
-                      onChange={(e) => setShareValue(e.target.value)}
-                      disabled={isLoading}
-                      min="0"
-                      required
-                    />
+                    <input type="number" className={formStyles.input} value={shareValue} onChange={(e) => setShareValue(e.target.value)} min="0" required />
                     <div className={formStyles.typeToggleGroup}>
-                      <button 
-                        type="button"
-                        className={`${formStyles.toggleButton} ${shareType === 'TL' ? formStyles.toggleActive : ''}`}
-                        onClick={() => setShareType('TL')}
-                        disabled={isLoading}
-                      >
-                        TL
-                      </button>
-                      <button 
-                        type="button"
-                        className={`${formStyles.toggleButton} ${shareType === '%' ? formStyles.toggleActive : ''}`}
-                        onClick={() => setShareType('%')}
-                        disabled={isLoading}
-                      >
-                        %
-                      </button>
+                      <button type="button" className={`${formStyles.toggleButton} ${shareType === 'TL' ? formStyles.toggleActive : ''}`} onClick={() => setShareType('TL')}>TL</button>
+                      <button type="button" className={`${formStyles.toggleButton} ${shareType === '%' ? formStyles.toggleActive : ''}`} onClick={() => setShareType('%')}>%</button>
                     </div>
                   </div>
                 </div>
                 
-                {/* Süre / Seans */}
                 <div className={formStyles.gridGroup} style={{ gridTemplateColumns: '1fr 1fr' }}>
                     <div className={formStyles.inputGroup}>
-                        <label htmlFor="duration">Süre (Gün)</label>
+                        <label>Süre (Gün)</label>
                         <div className={formStyles.inputWrapper}>
-                            <BarChart size={20} className={formStyles.inputIcon} />
-                            <input 
-                              id="duration" 
-                              type="number" 
-                              value={duration} 
-                              onChange={(e) => setDuration(e.target.value)} 
-                              placeholder="30" 
-                              className={formStyles.input} 
-                              min="0" 
-                              required 
-                            />
+                            <BarChart size={18} className={formStyles.inputIcon} />
+                            <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className={formStyles.input} min="0" required />
                         </div>
                     </div>
                     <div className={formStyles.inputGroup}>
-                        <label htmlFor="sessionCount">Seans Sayısı</label>
+                        <label>Seans Sayısı</label>
                         <div className={formStyles.inputWrapper}>
-                            <Hash size={20} className={formStyles.inputIcon} />
-                            <input 
-                              id="sessionCount" 
-                              type="number" 
-                              value={sessionCount} 
-                              onChange={(e) => setSessionCount(e.target.value)} 
-                              placeholder="12" 
-                              className={formStyles.input} 
-                              min="0" 
-                              required 
-                            />
+                            <Hash size={18} className={formStyles.inputIcon} />
+                            <input type="number" value={sessionCount} onChange={(e) => setSessionCount(e.target.value)} className={formStyles.input} min="0" required />
                         </div>
                     </div>
                 </div>
 
-                {/* Finansal Özet */}
-                 <div className={formStyles.formSummaryBox}>
+                <div className={formStyles.formSummaryBox}>
                      <div className={formStyles.summaryItem}><span>Şirket Payı:</span><strong>{formatCurrency(financials.companyCut)}</strong></div>
                      <div className={`${formStyles.summaryItem} ${formStyles.positive}`}><span>Koça Kalan:</span><strong>{formatCurrency(financials.coachCut)}</strong></div>
                  </div>
 
-                {/* Başlangıç Tarihi */}
                 <div className={formStyles.inputGroup}>
-                    <label htmlFor="startDate">Paket Başlangıç Tarihi</label>
+                    <label>Paket Başlangıç Tarihi</label>
                     <div className={formStyles.inputWrapper}>
-                        <Calendar size={20} className={formStyles.inputIcon} />
-                        <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={formStyles.input} required />
+                        <Calendar size={18} className={formStyles.inputIcon} />
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={formStyles.input} required />
                     </div>
                 </div>
 
-                {/* Bitiş Tarihi */}
                 <div className={formStyles.inputGroup}>
-                    <label>Hesaplanan Bitiş Tarihi</label>
-                    <input type="text" readOnly disabled className={formStyles.input} value={calculatedEndDate ? `${formatDate(calculatedEndDate)} (${duration} gün sonra)` : 'Hatalı Tarih'} style={{ paddingLeft: '1rem' }} />
-                </div>
-
-                {/* Ödeme Durumu */}
-                <div className={formStyles.inputGroup}>
-                    <label htmlFor="paymentStatus">Ödeme Durumu</label>
+                    <label>Ödeme Durumu</label>
                     <div className={formStyles.inputWrapper}>
-                        <Check size={20} className={formStyles.inputIcon} />
-                        <select id="paymentStatus" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as 'Paid' | 'Pending')} className={formStyles.input}>
+                        <Check size={18} className={formStyles.inputIcon} />
+                        <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as 'Paid' | 'Pending')} className={formStyles.input}>
                             <option value="Paid">Ödendi</option>
                             <option value="Pending">Beklemede</option>
                         </select>
                     </div>
                 </div>
 
-                {/* Diyetisyen Desteği */}
                 <div className={formStyles.inputGroup}>
                     <label className={formStyles.checkboxLabel}>
                         <input type="checkbox" checked={dietitianSupport} onChange={(e) => setDietitianSupport(e.target.checked)} />
@@ -362,7 +355,6 @@ const AddNewMemberModal: React.FC<ModalProps> = ({
                     </label>
                 </div>
 
-                {/* Form Butonları */}
                 <div className={formStyles.formActions}>
                     <button type="button" onClick={onClose} className={`${formStyles.submitButton} ${formStyles.secondary}`} disabled={isLoading}>İptal</button>
                     <button type="submit" className={`${formStyles.submitButton} ${formStyles.primary}`} disabled={isLoading}>

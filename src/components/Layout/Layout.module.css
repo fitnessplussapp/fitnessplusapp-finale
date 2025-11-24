@@ -3,36 +3,38 @@
 .layoutContainer {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh; /* Mobilde adres çubuğu değişimine uyum sağlar */
   width: 100%;
+  background-color: var(--bg-body);
+  position: relative;
+  isolation: isolate; /* Yeni stacking context oluşturur */
 }
 
 .mainContent {
   width: 100%;
   flex-grow: 1;
+  max-width: 1400px;
+  margin: 0 auto;
   
-  /* Dikey Güvenli Alan (Üst) */
-  padding-top: calc(73px + env(safe-area-inset-top));
+  /* --- MASAÜSTÜ PADDING HESABI --- */
+  /* Navbar Yüksekliği + Safe Area + Ekstra Boşluk */
+  padding-top: calc(var(--navbar-height-desktop) + env(safe-area-inset-top) + 1rem);
   padding-bottom: 2rem;
   
-  /* YENİ: Yatay Güvenli Alanlar Eklendi */
-  padding-left: calc(2rem + env(safe-area-inset-left));
-  padding-right: calc(2rem + env(safe-area-inset-right));
-
-  max-width: 1600px;
-  margin: 0 auto;
-  box-sizing: border-box; /* Kutu modellemesi eklendi */
+  /* Yatay Güvenli Alanlar */
+  padding-left: calc(1rem + env(safe-area-inset-left));
+  padding-right: calc(1rem + env(safe-area-inset-right));
 }
 
-/* HİBRİT YAPI: 768px ve altı (Mobil) */
+/* --- MOBİL --- */
 @media (max-width: 768px) {
   .mainContent {
+    /* Mobilde Navbar Yüksekliği değişiyor */
+    padding-top: calc(var(--navbar-height-mobile) + env(safe-area-inset-top) + 1rem);
     
-    /* Dikey Güvenli Alanlar (Üst/Alt) */
-    padding-top: calc(73px + env(safe-area-inset-top));
-    padding-bottom: calc(75px + env(safe-area-inset-bottom));
+    /* Alt Navigasyon + Safe Area + Ekstra Boşluk */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 2rem);
     
-    /* YENİ: Mobil Yatay Güvenli Alanlar Eklendi */
     padding-left: calc(1rem + env(safe-area-inset-left));
     padding-right: calc(1rem + env(safe-area-inset-right));
   }

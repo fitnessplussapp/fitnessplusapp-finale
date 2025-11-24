@@ -1,22 +1,28 @@
 /* src/components/Navbar/Navbar.module.css */
 
 .navbar {
-  width: 100%;
-  background-color: #1A1A1A;
-  border-bottom: 1px solid #2A2A2A;
-  
-  /* Dikey ve Yatay Güvenli Alanlar */
-  padding-top: calc(1rem + env(safe-area-inset-top));
-  padding-bottom: 1rem;
-  padding-left: calc(2rem + env(safe-area-inset-left));
-  padding-right: calc(2rem + env(safe-area-inset-right));
-  
+  /* Konumlandırma */
   position: fixed;
   top: 0;
   left: 0;
+  right: 0; 
+  width: 100%;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  box-sizing: border-box; 
+  
+  /* Görünüm */
+  background-color: rgba(18, 18, 18, 0.9);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+
+  /* Yükseklik Yönetimi */
+  height: calc(var(--navbar-height-desktop) + env(safe-area-inset-top));
+  
+  /* İçerik Hizalama */
+  display: flex;
+  align-items: flex-end; 
+  padding-bottom: 0; 
 }
 
 .navbarContent {
@@ -24,97 +30,102 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 1600px;
+  height: var(--navbar-height-desktop); 
+  max-width: 1400px;
   margin: 0 auto;
+  
+  /* Yatay Padding */
+  padding-left: calc(1.5rem + env(safe-area-inset-left));
+  padding-right: calc(1.5rem + env(safe-area-inset-right));
 }
 
 /* --- LOGO ALANI --- */
 .logoWrapper {
   display: flex;
   align-items: center;
-  gap: 1rem; /* Logo ile versiyon arası boşluğu açtık */
+  gap: 0.75rem;
+  height: 100%;
 }
 
 .logo {
-  font-size: 1.75rem; /* Yazı boyutunu büyüttük (Eski: 1.5rem) */
-  font-weight: 800;   /* Daha kalın font */
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #FFFFFF;
   display: flex;
   align-items: center;
   line-height: 1;
-  letter-spacing: -0.02em; /* Modern görünüm için harfleri hafif yaklaştırdık */
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  
+  /* Tıklanabilirlik ve Animasyon */
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* GÜNCELLENDİ: Logo Görseli Ayarları */
+.logo:hover {
+  opacity: 0.9;
+  transform: scale(1.02); /* Hafif büyüme efekti */
+}
+
+.logo:active {
+  transform: scale(0.98);
+}
+
 .logoImage {
-  height: 42px; /* Logoyu büyüttük (Eski: 32px) */
-  width: auto;  
-  margin-right: 0.75rem; 
+  height: 32px;
+  width: auto;
+  margin-right: 0.5rem;
   object-fit: contain;
 }
 
-.logoPlus { 
-  color: #D4AF37; 
-}
+.logoPlus { color: var(--primary-color); }
 
-/* GÜNCELLENDİ: Versiyon Rozeti (Daha Okunaklı) */
 .versionBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
-  /* Arka planı biraz daha görünür kıldık */
-  background-color: rgba(255, 255, 255, 0.08); 
-  border: 1px solid rgba(255, 255, 255, 0.15); /* Çerçeveyi belirginleştirdik */
-  color: #888; /* Yazı rengini açtık (Eski: #666) */
-  
-  font-size: 0.75rem; /* Fontu büyüttük (Eski: 0.7rem) */
-  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-family: monospace;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  
-  padding: 0.25rem 0.6rem; /* Kutu iç boşluğunu artırdık */
-  border-radius: 6px; /* Tam yuvarlak yerine hafif köşeli modern yapı */
-  
-  transition: all 0.3s ease;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
   cursor: default;
-  user-select: none;
-}
-
-.versionBadge:hover {
-  border-color: #D4AF37;
-  color: #D4AF37;
-  background-color: rgba(212, 175, 55, 0.1);
 }
 
 /* --- MENÜ LİNKLERİ --- */
 .navLinks {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  margin: 0 auto;
+  gap: 0.5rem;
+  height: 100%;
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #A0A0A0;
+  gap: 0.4rem;
+  color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
-  font-size: 1rem; /* Link yazılarını da hafif büyüttük */
-  padding: 0.5rem 0;
-  transition: color 0.3s ease, border-bottom-color 0.3s ease;
-  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  height: 40px;
 }
 
 .navLink:hover {
   color: #FFFFFF;
+  background-color: rgba(255,255,255,0.05);
 }
 
 .navLink.active {
-  color: #D4AF37;
-  border-bottom-color: #D4AF37;
+  color: #fff;
+  background-color: var(--primary-bg-light);
+  border: 1px solid rgba(129, 201, 189, 0.2); /* --primary-border eşdeğeri */
 }
 
 /* --- PROFİL ALANI --- */
@@ -122,19 +133,18 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #E0E0E0;
+  color: var(--text-main);
+  height: 100%;
 }
-.userName { font-weight: 600; font-size: 0.95rem; }
-.userAvatar { color: #707070; cursor: pointer; transition: color 0.3s ease; }
-.userAvatar:hover { color: #D4AF37; }
+.userName { font-weight: 600; font-size: 0.9rem; }
+.userAvatar { color: #888; }
 
-/* Çıkış Butonu */
 .logoutButton {
   background: none;
-  border: none;
-  color: #A0A0A0;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -143,45 +153,27 @@
 }
 
 .logoutButton:hover {
-  background-color: rgba(231, 76, 60, 0.1);
+  background-color: var(--primary-color);
+  border-color: #e74c3c;
   color: #e74c3c;
 }
 
-/* === MOBİL UYUMLULUK (Responsive) === */
+/* === MOBİL UYUMLULUK === */
 @media (max-width: 768px) {
   
-  .navLinks {
-    display: none;
-  }
-  .userProfile {
-    display: none;
+  .navbar {
+    height: calc(var(--navbar-height-mobile) + env(safe-area-inset-top));
   }
   
-  .navbar {
-    padding-top: calc(0.75rem + env(safe-area-inset-top));
-    padding-bottom: 0.75rem;
+  .navbarContent {
+    height: var(--navbar-height-mobile);
     padding-left: calc(1rem + env(safe-area-inset-left));
     padding-right: calc(1rem + env(safe-area-inset-right));
-    height: auto; /* Yüksekliği içeriğe göre esnet */
   }
 
-  /* Mobilde Badge Ayarı */
-  .versionBadge {
-    font-size: 0.7rem; /* Mobilde de okunabilir olsun */
-    padding: 0.2rem 0.5rem;
-  }
-  
-  .logoWrapper {
-    gap: 0.75rem;
-  }
-  
-  /* Mobilde Logo Ayarı */
-  .logo {
-    font-size: 1.4rem;
-  }
+  .navLinks { display: none; }
+  .userProfile { display: none; }
 
-  .logoImage {
-    height: 36px; /* Mobilde de belirgin olsun (Eski: 28px) */
-    margin-right: 0.5rem;
-  }
+  .logo { font-size: 1.2rem; }
+  .logoImage { height: 28px; }
 }

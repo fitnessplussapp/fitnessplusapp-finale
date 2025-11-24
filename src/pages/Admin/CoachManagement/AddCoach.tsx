@@ -1,14 +1,18 @@
 // src/pages/Admin/CoachManagement/AddCoach.tsx
 
-import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'; // TrendingUp ikonu kaldırıldı
+import React, { useState, useEffect } from 'react';
+import { User, Lock, Eye, EyeOff, Loader2, Layers, Check } from 'lucide-react'; 
 import Modal from '../../../components/Modal/Modal';
 import { isValidInput } from '../../../utils/securityUtils';
 import formStyles from '../../../components/Form/Form.module.css';
 
 import { db } from '../../../firebase/firebaseConfig';
 import { doc } from 'firebase/firestore';
-import { setDocWithCount, getDocWithCount } from '../../../firebase/firestoreService';
+
+// Fonksiyonlar normal import
+import { setDocWithCount, getDocWithCount, getSystemDefinitions } from '../../../firebase/firestoreService';
+// Type'lar "import type" ile
+import type { SystemDefinition } from '../../../firebase/firestoreService';
 
 interface AddCoachProps {
   isOpen: boolean;
@@ -19,31 +23,58 @@ interface AddCoachProps {
 const AddCoach: React.FC<AddCoachProps> = ({ isOpen, onClose, onCoachAdded }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  
-  // GÜNCELLEME: Pay state'leri kaldırıldı
-  // const [shareValue, setShareValue] = useState('');
-  // const [shareType, setShareType] = useState<'TL' | '%'>('TL'); 
-  
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Dinamik Alanlar State'i (Artık Array tutuyor)
+  const [definitions, setDefinitions] = useState<SystemDefinition[]>([]);
+  const [dynamicValues, setDynamicValues] = useState<{ [key: string]: string[] }>({});
+
+  // Modal açıldığında tanımları çek
+  useEffect(() => {
+    if (isOpen) {
+      const fetchDefs = async () => {
+        try {
+          const allDefs = await getSystemDefinitions();
+          // Sadece hedefinde 'coach' olanları filtrele
+          const coachDefs = allDefs.filter(d => d.targets && d.targets.includes('coach'));
+          setDefinitions(coachDefs);
+        } catch (err) {
+          console.error("Sistem tanımları çekilemedi:", err);
+        }
+      };
+      fetchDefs();
+    }
+  }, [isOpen]);
+
   const handleClose = () => {
     setUsername('');
     setPassword('');
-    // GÜNCELLEME: Pay reset'leri kaldırıldı
-    // setShareValue('');
-    // setShareType('TL');
+    setDynamicValues({}); // Reset
     setError('');
     setShowPassword(false);
     onClose();
+  };
+
+  // --- ÇOKLU SEÇİM MANTIĞI ---
+  const toggleDynamicValue = (defId: string, itemValue: string) => {
+    setDynamicValues(prev => {
+      const currentList = prev[defId] || [];
+      if (currentList.includes(itemValue)) {
+        // Varsa çıkar
+        return { ...prev, [defId]: currentList.filter(i => i !== itemValue) };
+      } else {
+        // Yoksa ekle
+        return { ...prev, [defId]: [...currentList, itemValue] };
+      }
+    });
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // GÜNCELLEME: Pay validasyonu kaldırıldı
     if (!isValidInput(username) || !isValidInput(password)) {
       setError('Geçersiz karakterler kullanıldı. ($ { } [ ] )');
       return;
@@ -62,19 +93,16 @@ const AddCoach: React.FC<AddCoachProps> = ({ isOpen, onClose, onCoachAdded }) =>
         return;
       }
 
-      // GÜNCELLEME: shareData kaldırıldı
-      // const shareData = { ... };
-
-      // newCoachData GÜNCELLENDİ (share kaldırıldı)
       const newCoachData = {
         username: coachId,
         password: password, 
-        // share: shareData, // KALDIRILDI
         isActive: true,
         totalEarnings: 0,
         companyCut: 0,
         totalMembers: 0,
-        role: 'coach'
+        role: 'coach',
+        // Dinamik alanları kaydet (Array olarak kaydedilecek)
+        customFields: dynamicValues 
       };
 
       await setDocWithCount(coachRef, newCoachData);
@@ -142,12 +170,60 @@ const AddCoach: React.FC<AddCoachProps> = ({ isOpen, onClose, onCoachAdded }) =>
           </div>
         </div>
 
-        {/* GÜNCELLEME: Şirket Payı Input Alanı KALDIRILDI */}
+        {/* --- YENİ: ÇOKLU SEÇİMLİ DİNAMİK ALANLAR --- */}
+        {definitions.length > 0 && (
+          <div style={{ marginTop: '1.5rem', borderTop: '1px solid #333', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h4 style={{ color: '#D4AF37', fontSize: '0.95rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Layers size={16} /> Ek Bilgiler (Çoklu Seçim)
+            </h4>
+            
+            {definitions.map(def => (
+              <div key={def.id} className={formStyles.inputGroup}>
+                <label style={{marginBottom: '0.5rem', color: '#AAA', fontSize: '0.85rem'}}>{def.title}</label>
+                
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {def.items.length > 0 ? (
+                    def.items.map((item, idx) => {
+                      const isSelected = dynamicValues[def.id]?.includes(item);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => toggleDynamicValue(def.id, item)}
+                          style={{
+                            background: isSelected ? 'rgba(212, 175, 55, 0.15)' : '#1A1A1A',
+                            border: isSelected ? '1px solid #D4AF37' : '1px solid #333',
+                            color: isSelected ? '#D4AF37' : '#888',
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {isSelected && <Check size={14} />}
+                          {item}
+                        </button>
+                      )
+                    })
+                  ) : (
+                    <span style={{fontSize: '0.8rem', color: '#555', fontStyle: 'italic'}}>Seçenek yok.</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* ----------------------------- */}
         
         <button 
           type="submit" 
           className={formStyles.submitButton}
           disabled={isLoading}
+          style={{marginTop: '1.5rem'}}
         >
           {isLoading ? (
             <Loader2 size={20} className={formStyles.spinner} />

@@ -1,0 +1,203 @@
+/* src/pages/Admin/Dashboard/components/CoachWeeklySchedule.module.css */
+
+.container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-top: 2.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background-color: rgba(255,255,255,0.02);
+}
+
+.headerTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-main);
+}
+.headerTitle h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.icon { color: var(--primary-color); }
+
+.controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.coachSelect {
+    padding: 0.5rem 1rem;
+    background-color: #1a1a1a;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    outline: none;
+    min-width: 200px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.weekPicker {
+    display: flex;
+    align-items: center;
+    background-color: #1a1a1a;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+}
+
+.navBtn {
+    background: none; border: none; color: #aaa; cursor: pointer; padding: 6px 10px;
+    display: flex; align-items: center; transition: color 0.2s;
+}
+.navBtn:hover { color: var(--primary-color); }
+
+.weekLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 150px;
+    text-align: center;
+    color: var(--text-main);
+    user-select: none;
+}
+
+.refreshBtn {
+    background: #1a1a1a; border: 1px solid var(--border-color); color: #aaa;
+    padding: 0.5rem; border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.refreshBtn:hover:not(:disabled) { border-color: var(--primary-color); color: var(--primary-color); }
+
+/* SUMMARY BAR */
+.summaryBar {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.8rem 1.25rem;
+    background-color: #111;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: #ccc;
+    align-items: center;
+    overflow-x: auto; /* Mobilde taşarsa */
+    white-space: nowrap;
+}
+.summaryItem { display: flex; align-items: center; gap: 0.5rem; }
+.summaryItem strong { color: #fff; font-weight: 700; }
+.verticalSep { width: 1px; height: 16px; background-color: #333; }
+.dotPT { width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6; }
+.dotGroup { width: 8px; height: 8px; border-radius: 50%; background-color: #a855f7; }
+
+/* CONTENT */
+.content { padding: 1rem; min-height: 300px; position: relative; }
+
+.emptyState, .loadingState {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 250px; color: var(--text-muted); gap: 1rem; text-align: center;
+}
+.infoBadge {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem;
+}
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- GRID (HAFTALIK TAKVİM) --- */
+.gridContainer {
+    width: 100%;
+    overflow-x: auto; /* Yatay kaydırma */
+    -webkit-overflow-scrolling: touch; /* Mobilde yumuşak kaydırma */
+    padding-bottom: 10px; /* Scrollbar için yer */
+}
+
+.grid {
+    display: grid;
+    /* Mobilde her sütun en az 160px olsun, böylece ezilmezler, scroll çıkar */
+    grid-template-columns: repeat(7, minmax(160px, 1fr));
+    gap: 0.75rem;
+}
+
+.dayCol {
+    background-color: #151515;
+    border: 1px solid #2a2a2a;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: 200px; /* Boş günlerin de yüksekliği olsun */
+}
+
+.today {
+    border-color: rgba(16, 185, 129, 0.5);
+    background-color: rgba(16, 185, 129, 0.03);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.05);
+}
+.today .dayHeader { color: #10b981; border-bottom-color: rgba(16, 185, 129, 0.2); }
+
+.dayHeader {
+    padding: 0.8rem;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #888;
+    background: rgba(255,255,255,0.02);
+}
+.dayNum { color: #fff; }
+
+.dayBody {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.noData {
+    font-size: 0.8rem; color: #444; text-align: center; margin-top: 1rem;
+}
+
+.card {
+    padding: 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    border-left: 3px solid;
+    background-color: #222;
+    transition: transform 0.1s;
+    cursor: default;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+.pt { border-color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); }
+.group { border-color: #a855f7; background-color: rgba(168, 85, 247, 0.1); }
+
+.time { display: block; font-weight: 700; color: #eee; margin-bottom: 3px; font-size: 0.8rem; }
+.title { 
+    display: block; color: #bbb; 
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+    font-size: 0.85rem;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .header { flex-direction: column; align-items: stretch; gap: 1rem; }
+    .controls { flex-direction: column; width: 100%; align-items: stretch; }
+    .weekPicker { justify-content: space-between; }
+    .coachSelect { width: 100%; }
+    /* Scroll bar'ı stillendirelim (opsiyonel) */
+    .gridContainer::-webkit-scrollbar { height: 6px; }
+    .gridContainer::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+}

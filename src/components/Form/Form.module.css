@@ -3,115 +3,109 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Form grupları arası boşluk */
+  gap: 1rem; /* 1.5rem -> 1rem */
 }
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
-/* İkili grid grup (Fiyat/Süre) */
+/* İkili grid grup */
 .gridGroup {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
-/* Mobilde alt alta düşsün (Bu kural zaten vardı) */
 @media (max-width: 500px) {
-  .gridGroup {
-    grid-template-columns: 1fr;
-  }
+  .gridGroup { grid-template-columns: 1fr; }
 }
 
 .inputGroup label {
-  font-size: 0.9rem;
+  font-size: 0.75rem; /* 0.9 -> 0.75 */
   font-weight: 500;
-  color: #A0A0A0;
+  color: var(--text-muted);
 }
 .inputGroup small {
-  font-size: 0.8rem;
-  color: #888;
+  font-size: 0.7rem;
+  color: #666;
 }
 .inputWrapper {
   position: relative;
 }
 .inputIcon {
   position: absolute;
-  left: 1rem; 
+  left: 0.75rem; 
   top: 50%;
   transform: translateY(-50%);
-  color: #707070;
+  color: #666;
   z-index: 10;
+  width: 16px; /* İkon boyutu sabitlendi */
 }
 .input {
   width: 100%;
-  padding: 0.9rem 1rem 0.9rem 3rem;
-  background-color: #121212;
+  padding: 0.65rem 0.75rem 0.65rem 2.5rem; /* Paddingler küçültüldü */
+  background-color: var(--bg-input);
   border: 1px solid #333;
-  border-radius: 8px;
-  color: #FFFFFF;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-sizing: border-box; /* Padding'in genişliği etkilememesi için */
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.85rem; /* 1rem -> 0.85 */
+  transition: all 0.2s ease;
+  box-sizing: border-box; 
 }
 .input:focus {
   outline: none;
-  border-color: #D4AF37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-bg-light);
 }
 .input:disabled {
-  background-color: #252525;
-  color: #777;
+  background-color: #1a1a1a;
+  color: #666;
   cursor: not-allowed;
 }
 
 /* Şifre gösterme ikonu */
 .passwordIcon {
   position: absolute;
-  right: 0.75rem;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #707070;
+  color: #666;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.2rem;
 }
-.passwordIcon:hover {
-  color: #FFFFFF;
-}
+.passwordIcon:hover { color: #FFF; }
 
-/* Checkbox (Diyetisyen Desteği) */
+/* Checkbox */
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: #A0A0A0;
-  font-size: 0.95rem;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
+  padding: 0.25rem;
+  border-radius: 4px;
   transition: background-color 0.2s ease;
 }
-.checkboxLabel:hover {
-  background-color: #222;
-}
+.checkboxLabel:hover { background-color: #1a1a1a; }
 .checkboxLabel input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  background-color: #121212;
-  border: 2px solid #555;
-  border-radius: 5px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--bg-input);
+  border: 1px solid #444;
+  border-radius: 4px;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
 }
 .checkboxLabel input[type="checkbox"]:checked {
-  background-color: #D4AF37;
-  border-color: #D4AF37;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 .checkboxLabel input[type="checkbox"]:checked::after {
   content: '✔';
@@ -120,44 +114,44 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 /* Form Buton Alanı */
 .formActions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  border-top: 1px solid #2A2A2A;
-  padding-top: 1.5rem;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
 }
 
 .submitButton {
-  flex-grow: 1; /* Butonlar eşit genişlesin */
-  padding: 1rem;
+  flex-grow: 1;
+  padding: 0.75rem;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 .submitButton.primary {
-  background-color: #D4AF37;
+  background-color: var(--primary-color);
   color: #121212;
 }
 .submitButton.primary:hover:not(:disabled) {
-  background-color: #E6C25E;
+  background-color: var(--primary-hover);
 }
 /* İptal Butonu */
 .submitButton.secondary {
-  background-color: #2A2A2A;
-  color: #A0A0A0;
+  background-color: #222;
+  color: var(--text-muted);
   border: 1px solid #333;
 }
 .submitButton.secondary:hover:not(:disabled) {
@@ -166,66 +160,60 @@
 }
 /* Silme Butonu */
 .submitButton.danger {
-  background-color: #ef4444;
-  color: #FFFFFF;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 .submitButton.danger:hover:not(:disabled) {
-  background-color: #f87171;
+  background-color: #ef4444;
+  color: #FFF;
 }
 
 .submitButton:disabled {
-  background-color: #505050;
-  color: #888;
+  background-color: #333;
+  color: #666;
   cursor: not-allowed;
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .error {
   color: #ff6b6b;
   background-color: rgba(255, 107, 107, 0.1);
   border: 1px solid #ff6b6b;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
-/* Form İçi Özet Kutusu (Finansal/Tarih) */
+/* Form İçi Özet Kutusu */
 .formSummaryBox {
   display: flex;
   justify-content: space-around;
-  background-color: #111;
-  border: 1px dashed #333;
-  border-radius: 8px;
-  padding: 1rem;
-  gap: 1rem;
+  background-color: rgba(129, 201, 189, 0.05); /* Mint Tint */
+  border: 1px dashed var(--primary-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  gap: 0.75rem;
 }
 .summaryItem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.1rem;
 }
 .summaryItem span {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: #888;
 }
 .summaryItem strong {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #D4AF37; /* Varsayılan Vurgu Rengi */
+  color: var(--primary-color); 
 }
-/* Koç Payı için özel renk */
-.summaryItem.positive strong {
-  color: #22c55e;
-}
+.summaryItem.positive strong { color: #22c55e; }
 
 
 /* ======================================== */
@@ -240,21 +228,16 @@
 
 .compoundInputWrapper .input {
   flex-grow: 1;
-  /* UI KAYMA DÜZELTMESİ: width: auto olmalı ki flex-grow çalışsın */
   width: auto; 
-  /* YENİ: Ekran çok daraldığında bile 80px'in altına düşmesini engelle */
-  min-width: 80px; 
+  min-width: 60px; 
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   border-right: none;
 }
 
-.compoundInputWrapper .input:focus {
-  z-index: 10;
-  position: relative;
-}
+.compoundInputWrapper .input:focus { z-index: 10; position: relative; }
 
-/* Segmentli Buton Grubu Stilleri (TL / %) */
+/* Segmentli Buton Grubu */
 .typeToggleGroup {
   display: flex;
   flex-shrink: 0; 
@@ -262,99 +245,68 @@
   background-color: #121212;
   border: 1px solid #333;
   border-left: none;
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
   overflow: hidden; 
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .toggleButton {
-  padding: 0.9rem 1rem;
+  padding: 0.65rem 0.8rem;
   background-color: transparent;
   border: none;
   border-left: 1px solid #333; 
-  color: #A0A0A0;
-  font-size: 0.9rem;
+  color: #888;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   line-height: 1; 
 }
-.toggleButton:first-child {
-  border-left: none; 
-}
-.toggleButton:hover:not(:disabled) {
-  background-color: #252525;
-  color: #FFFFFF;
-}
-.toggleButton:disabled {
-  color: #555;
-  cursor: not-allowed;
-}
+.toggleButton:first-child { border-left: none; }
+.toggleButton:hover:not(:disabled) { background-color: #222; color: #FFF; }
+.toggleButton:disabled { color: #555; cursor: not-allowed; }
 
-/* Aktif (Seçili) Buton Stili */
+/* Aktif Buton */
 .toggleActive {
-  background-color: #D4AF37;
-  color: #121212;
+  background-color: var(--primary-bg-light);
+  color: var(--primary-color);
 }
 .toggleActive:hover:not(:disabled) {
-  background-color: #E6C25E;
+  background-color: var(--primary-color);
   color: #121212;
 }
 
-/* Odaklanma (Focus) Stilleri */
 .compoundInputWrapper .input:focus + .typeToggleGroup,
 .typeToggleGroup:focus-within {
-  border-color: #D4AF37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-bg-light);
   z-index: 10;
   position: relative;
 }
-.compoundInputWrapper .input:focus + .typeToggleGroup {
-    border-left: none;
-}
+.compoundInputWrapper .input:focus + .typeToggleGroup { border-left: none; }
 
-/* Chrome'da sayı input'undaki okları kaldır */
 .compoundInputWrapper input::-webkit-outer-spin-button,
 .compoundInputWrapper input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-/* Firefox'ta sayı input'undaki okları kaldır */
-.compoundInputWrapper input[type=number] {
-  -moz-appearance: textfield;
-}
+.compoundInputWrapper input[type=number] { -moz-appearance: textfield; }
 
-/* ======================================== */
-/* YENİ: Mobil Uyumluluk (500px altı)     */
-/* ======================================== */
+/* MOBİL */
 @media (max-width: 500px) {
-
-  /* Form butonlarını (İptal/Kaydet) alt alta diz */
-  .formActions {
-    flex-direction: column-reverse; /* Önce birincil (Kaydet) butonu */
-  }
-
-  /* Finansal özet kutusunu (Şirket/Koç Payı) alt alta diz */
+  .formActions { flex-direction: column-reverse; }
   .formSummaryBox {
     flex-direction: column;
-    align-items: stretch; /* Kenarlara yasla */
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.75rem;
   }
-
-  /* Finansal özet maddelerini mobilde daha okunaklı yap */
   .summaryItem {
-    flex-direction: row; /* Yan yana (Metin: Değer) */
-    justify-content: space-between; /* Aralarını aç */
-    align-items: center;
-    width: 100%; /* Tam genişlik kaplasın */
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
   }
-
-  .summaryItem span {
-    font-size: 0.95rem; /* Biraz büyüt */
-  }
-  .summaryItem strong {
-    font-size: 1.1rem; 
-  }
+  .summaryItem span { font-size: 0.8rem; }
+  .summaryItem strong { font-size: 0.9rem; }
 }

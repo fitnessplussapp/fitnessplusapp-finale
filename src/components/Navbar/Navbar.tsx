@@ -1,7 +1,7 @@
 // src/components/Navbar/Navbar.tsx
 
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom'; // Link eklendi
 import styles from './Navbar.module.css';
 import {
   LayoutDashboard,
@@ -11,7 +11,7 @@ import {
   UserCircle,
   LogOut,
   Calendar,
-  Calculator // YENİ: Hesap Makinesi İkonu
+  Calculator 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -28,6 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
   
   const appVersion = import.meta.env.PACKAGE_VERSION || 'v1.0.0';
 
+  // Kullanıcı rolüne göre ana sayfa yolu
   const basePath = userRole === 'admin' ? '/admin' : '/coach';
 
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) => {
@@ -45,14 +46,16 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
         
         {/* SOL KISIM: LOGO VE VERSİYON */}
         <div className={styles.logoWrapper}>
-          <div className={styles.logo}>
+          {/* LOGO ARTIK TIKLANABİLİR BİR LİNK */}
+          <Link to={basePath} className={styles.logo} title="Ana Sayfaya Dön">
             <img 
               src={appLogo} 
               alt="Esperto PT Logo" 
               className={styles.logoImage} 
             />
             <span>ESPERTO-<span className={styles.logoPlus}>PT</span></span>
-          </div>
+          </Link>
+          
           <div className={styles.versionBadge}>
             v{appVersion}
           </div>
@@ -72,7 +75,6 @@ const Navbar: React.FC<NavbarProps> = ({ userRole }) => {
                 <span>Koç Yönetimi</span>
               </NavLink>
 
-              {/* YENİ: Maaş Hesapla Linki */}
               <NavLink to="/admin/payments" className={getNavLinkClass}>
                 <Calculator size={20} />
                 <span>Maaş Hesapla</span>

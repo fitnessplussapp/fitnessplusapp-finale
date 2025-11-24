@@ -1,55 +1,104 @@
 /* src/global.css */
 
+:root {
+  /* --- RENK PALETİ (MINT/TURKUAZ) --- */
+  --primary-color: #81C9BD;          /* Ana Renk */
+  --primary-hover: #6FB3A8;          /* Hover Rengi */
+  --primary-bg-light: rgba(129, 201, 189, 0.1); /* Hafif Arka Plan */
+  --primary-border: rgba(129, 201, 189, 0.3);   /* Hafif Kenarlık */
+  
+  --bg-body: #121212;                /* Sayfa Arka Planı */
+  --bg-card: #181818;                /* Kart Arka Planı */
+  --bg-input: #0F0F0F;               /* Input Arka Planı */
+  
+  --text-main: #E0E0E0;              /* Ana Metin */
+  --text-muted: #9ca3af;             /* Soluk Metin */
+  --border-color: #2a2a2a;           /* Genel Kenarlık */
+
+  /* --- BOYUTLANDIRMA (KÜÇÜLTÜLMÜŞ) --- */
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+  --font-size-base: 0.9rem;          
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.4rem;
+  --font-size-2xl: 1.75rem;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+
+  /* --- LAYOUT DEĞİŞKENLERİ (MOBİL UYUMU İÇİN GEREKLİ) --- */
+  --navbar-height-desktop: 70px;
+  --navbar-height-mobile: 60px;
+}
+
 /* CSS Reset */
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Padding taşmalarını önler */
 }
 
 html {
   height: 100%;
+  font-size: 15px; /* Varsayılan 16px yerine 15px */
+  -webkit-text-size-adjust: 100%; /* iOS metin büyütmeyi engeller */
 }
 
 body {
   font-family: 'Poppins', sans-serif;
-  color: #E0E0E0;
+  color: var(--text-main);
+  background-color: var(--bg-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* Arka plan ayarları globalden (login'e özel) kaldırıldı. */
-  /* Artık her sayfa kendi arka planını yönetebilir. */
-  /* Panel için varsayılan arka planı ayarlıyoruz. */
-  background-color: #121212;
   
-  min-height: 100vh;
-  height: 100%;
+  /* Mobil tarayıcılar (Safari) için dinamik yükseklik */
+  min-height: 100dvh; 
+  width: 100%;
+  overflow-x: hidden; /* Yatay kaymayı engeller */
+  line-height: 1.5;
 }
-
-/* GİRİŞ SAYFASI İÇİN ÖZEL ARKA PLAN */
-/* Eğer giriş sayfasındaki arka planı korumak istiyorsak,
-  bu kodu Login.module.css içine :global(body) olarak taşımalıyız
-  veya App.tsx'te URL'e göre body class'ı değiştirmeliyiz.
-  ŞİMDİLİK BASİT TUTMAK İÇİN GİRİŞİN ARKA PLANINI DA SİYAHA ÇEVİRDİK.
-  (İsterseniz bir sonraki adımda Login'e özel arka planı geri getirebiliriz.)
-*/
 
 #root {
   width: 100%;
-  min-height: 100vh;
-  /* justify-content ve align-items kaldırıldı. 
-    Bunlar GİRİŞ ekranı içindi. Artık panel tam sayfa olacak.
-  */
-  display: flex; /* Sadece flex kalsın */
+  min-height: 100dvh; /* Body ile uyumlu */
+  display: flex;
+  flex-direction: column;
 }
 
-@media (max-width: 768px) {
-  body {
-    min-height: 100%;
-    height: 100%;
-  }
+/* Global Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-body); 
+}
+::-webkit-scrollbar-thumb {
+  background: #333; 
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444; 
+}
 
-  #root {
-    min-height: 100%;
+/* Otomatik doldurma (Autofill) arka plan rengini düzeltme (Koyu tema için) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #0F0F0F inset !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px; /* Mobilde fontları biraz daha küçült */
   }
 }

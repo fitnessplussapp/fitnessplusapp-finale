@@ -9,23 +9,32 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: 'small' | 'large'; // Yeni Prop
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  size = 'small' // Varsayılan: small
+}) => {
   if (!isOpen) {
     return null;
   }
 
-  // Arka plana (backdrop) tıklayınca kapat
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
+  // CSS sınıfını prop'a göre seç
+  const sizeClass = size === 'large' ? styles.sizeLarge : styles.sizeSmall;
+
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
-      <div className={styles.modalContent}>
+      <div className={`${styles.modalContent} ${sizeClass}`}>
         
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{title}</h2>

@@ -1,261 +1,345 @@
 /* src/pages/Admin/CoachManagement/members/MemberDetails.module.css */
 
 .pageContainer {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
   padding-top: 0.5rem;
-  /* Daha lüks bir "boşluk" hissi için alt boşluk ekleyelim */
-  padding-bottom: 2rem; 
+  padding-bottom: 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* ======================================== */
-/* 1. Durum Kartları (Grid) */
-/* ======================================== */
-
-.statusGrid {
-  display: grid;
-  grid-template-columns: 1fr; /* Mobilde tek sütun */
-  gap: 1rem; /* Boşlukları biraz azalttım */
-  margin-bottom: 1.5rem;
-}
-
-/* Masaüstünde 2 sütunlu grid */
-@media (min-width: 768px) {
-  .statusGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-}
-
-.statusCard {
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.cardHeader {
+/* --- HEADER --- */
+.headerWrapper {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #2A2A2A;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #A0A0A0;
-}
-.cardHeader svg {
-  color: #777;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
 }
 
-.cardBody {
-  padding: 1.25rem;
-}
-
-/* A. Progress Bar Stilleri */
-.progressInfo {
+.headerTop {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.75rem;
-}
-.progressText {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #E0E0E0;
-}
-.progressEndDate {
-  font-size: 0.85rem;
-  color: #888;
-}
-.progressBarContainer {
-  width: 100%;
-  height: 10px;
-  background-color: #333;
-  border-radius: 5px;
-  overflow: hidden;
-}
-.progressBarFill {
-  height: 100%;
-  background-color: #D4AF37;
-  border-radius: 5px;
-  transition: width 0.5s ease-out;
-}
-/* Biten paket */
-.progressBarFill[style*="width: 0%"] {
-  background-color: #444;
+  align-items: flex-start;
 }
 
-/* B. Diyetisyen Durumu Stilleri */
-.dietitianStatus {
+.profileSummary {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-.positive {
-  color: #22c55e; /* Yeşil */
-}
-.negative {
-  color: #ef4444; /* Kırmızı */
-}
-
-
-/* ======================================== */
-/* 2. Paket Listesi Stilleri (YENİ KART YAPISI) */
-/* ======================================== */
-
-.packageList {
-  display: flex;
-  flex-direction: column;
-  /* YENİ: Kartlar arasında boşluk bırakmak için 'gap' kullanıyoruz */
-  gap: 1rem; 
-}
-.emptyList {
-  padding: 2rem;
-  text-align: center;
-  color: #888;
-}
-
-/* YENİ: .packageItem artık bir "kart" */
-.packageItem {
-  display: grid;
-  /* YENİ MOBİL GRID YAPISI:
-    - Satır 1: [Bilgi (info)] [Aksiyonlar (actions)]
-    - Satır 2: [Finansallar (financials) - tam genişlik]
-  */
-  grid-template-columns: 1fr auto; 
-  grid-template-areas: 
-    "info actions"
-    "financials financials";
-  gap: 1rem;
-  
-  /* Kart stilleri eklendi */
-  background-color: #1A1A1A;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  transition: border-color 0.3s ease;
-}
-/* Eski 'border-bottom' ve 'last-child' stilleri kaldırıldı */
-
-/* Mevcut (aktif) paketi vurgula */
-.currentPackage {
-  /* Arkaplan rengini değiştirmek yerine, belirgin bir border ekliyoruz */
-  border-left: 4px solid #D4AF37;
-  padding-left: calc(1.25rem - 3px); /* Sol border'ı dengele */
-  /* Vurgulu paketin kendi arkaplanı (hover'dan daha güçlü) */
-  background-color: #202020; 
-  border-color: #D4AF37;
-}
-/* Diğer paketler hover olduğunda, aktif paket kadar dikkat çekmemeli */
-
-/* A. Paket Bilgisi (Tarih, Fiyat) */
-.packageInfo {
-  grid-area: info;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.packageName {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #E0E0E0;
-}
-.currentPackage .packageName {
-  color: #D4AF37;
-}
-.packageDate {
-  font-size: 0.85rem;
-  color: #888;
-}
-.packagePrice {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #E0E0E0;
-  margin-top: 0.25rem;
-}
-
-/* B. Finansal Detaylar */
-.packageFinancials {
-  grid-area: financials;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1rem;
-  background-color: #111; /* Kart içi kart görünümü için bu güzel */
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-}
-.financialItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  text-align: center;
-}
-.financialItem span {
-  font-size: 0.8rem;
-  color: #888;
-  font-weight: 500;
-}
-.financialItem strong {
-  font-size: 1rem;
-  color: #E0E0E0;
-  font-weight: 600;
-}
-
-/* C. Paket Aksiyonları (Düzenle/Sil) */
-.packageActions {
-  grid-area: actions;
-  display: flex;
   gap: 0.75rem;
-  /* 'justify-content' artık grid tarafından yönetiliyor */
 }
-.actionButton {
+
+.avatarCircle {
+  width: 48px; /* 64 -> 48 */
+  height: 48px;
+  background: linear-gradient(135deg, #2A2A2A 0%, #1A1A1A 100%);
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem; 
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(129, 201, 189, 0.1);
+}
+
+.memberIdentity {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberName {
+  font-size: 1.25rem; /* 1.75 -> 1.25 */
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.memberStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+.activeStatus { color: #22c55e; }
+.passiveStatus { color: #ef4444; }
+
+/* --- STATS GRID --- */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.statCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: transform 0.2s;
+}
+.statCard:hover {
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.statValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.statSubtext {
+  font-size: 0.7rem;
+  color: #555;
+}
+
+/* --- MAIN LAYOUT --- */
+.mainContentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* --- SOL: PROFİL KARTI --- */
+.profileCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  height: fit-content;
+}
+
+.sectionTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #222;
+}
+.infoRow:last-child { border-bottom: none; margin: 0; padding: 0; }
+
+.infoIconBox {
+  width: 32px;
+  height: 32px;
+  background-color: #222;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex-grow: 1;
+}
+
+.infoLabel {
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.infoValue {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+.actionLink:hover { text-decoration: underline; }
+
+/* --- SAĞ: PAKETLER --- */
+.packagesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.packagesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.packageCard {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.activePackageBorder {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-bg-light);
+}
+
+.packageCardHeader {
+  background-color: #202020;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.packageTitleGroup { display: flex; flex-direction: column; }
+
+.packageTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.activeBadge {
+  font-size: 0.65rem;
+  background-color: var(--primary-color);
+  color: #121212;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.packageMeta {
+  font-size: 0.75rem;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.packageBody { padding: 1rem; }
+
+/* Etiketler */
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background-color: var(--primary-bg-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 4px;
+  color: var(--primary-color);
+}
+
+/* İlerleme */
+.progressSection { margin-bottom: 1rem; }
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.progressTrack {
+  width: 100%;
+  height: 6px;
   background-color: #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+/* Alt Bilgi */
+.packageFooter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+.footerItem { display: flex; flex-direction: column; }
+.footerLabel { font-size: 0.7rem; color: #666; }
+.footerValue { font-size: 0.85rem; color: var(--text-main); font-weight: 600; }
+.income { color: #22c55e; }
+
+/* Aksiyonlar */
+.cardActions { display: flex; gap: 0.4rem; }
+.iconButton {
+  background: #333;
   border: 1px solid #444;
-  color: #A0A0A0;
+  color: #AAA;
+  padding: 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.actionButton:hover {
-  background-color: #444;
-  color: #FFFFFF;
-}
-.editButton:hover {
-  border-color: #3B82F6;
-  color: #3B82F6;
-}
-.deleteButton:hover {
-  border-color: #ef4444;
-  color: #ef4444;
-}
+.iconButton:hover { background: #444; color: #FFF; }
+.deleteBtn:hover { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444; }
 
-/* ======================================== */
-/* 3. Paket Listesi (Masaüstü İyileştirmesi) */
-/* ======================================== */
-
-/* YENİ: Masaüstü breakpoint'ini 992px'den 768px'e çektim. 
-  Status kartları 2'li gride geçtiği anda bu da geçebilir.
-  Eğer tablet/laptop arası (768-992) görünüm hoşunuza gitmezse 992px'e geri alabilirsiniz.
-*/
-@media (min-width: 768px) { 
-  .packageItem {
-    /* Masaüstünde tek satırlı grid */
-    grid-template-columns: 1fr auto auto; /* [Info] [Financials] [Actions] */
-    grid-template-areas: "info financials actions";
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1.25rem 1.5rem; /* Masaüstünde biraz daha fazla padding */
+/* --- RESPONSIVE --- */
+@media (min-width: 768px) {
+  .headerWrapper {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
   }
-
-  .packageFinancials {
-    padding: 0; /* Arka planı kaldır */
-    background-color: transparent;
-    border-radius: 0; /* Gerek kalmadı */
+  .statsGrid { grid-template-columns: repeat(4, 1fr); }
+  .mainContentGrid {
+    grid-template-columns: 300px 1fr; 
+    align-items: start;
   }
+  .packageFooter { grid-template-columns: repeat(4, 1fr); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

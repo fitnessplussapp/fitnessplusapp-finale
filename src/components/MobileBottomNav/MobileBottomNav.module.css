@@ -1,94 +1,103 @@
 /* src/components/MobileBottomNav/MobileBottomNav.module.css */
 
 .bottomNav {
-  display: none; 
+  display: none; /* Desktopta gizle */
   position: fixed;
   bottom: 0;
   left: 0;
+  right: 0; /* Genişliği garantile */
   width: 100%;
   
-  /* Dikey Güvenli Alan */
+  /* Yükseklik: İçerik + Safe Area */
   height: calc(60px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   
-  /* YENİ: Yatay Güvenli Alanlar Eklendi */
   padding-left: calc(0.5rem + env(safe-area-inset-left));
   padding-right: calc(0.5rem + env(safe-area-inset-right));
 
-  background-color: #1A1A1A;
-  border-top: 1px solid #2A2A2A;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25); 
+  background-color: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4); 
   
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-around;
   z-index: 1000;
-  box-sizing: border-box; /* Kutu modellemesi eklendi */
 }
 
 @media (max-width: 768px) {
   .bottomNav {
     display: flex;
+    align-items: center;
+    justify-content: space-around;
   }
 }
 
-/* === KAPSÜL TASARIMI (HATASIZ ANİMASYON) === */
-/* ... (Bu bölümdeki .navLink, .label, .icon vb. stilleri 
-       gönderdiğin dosyadaki gibi kalabilir, 
-       çünkü güvenli alanla ilgisi yok) ... */
+/* Kapsül Tasarımı */
 .navLink {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  color: #A0A0A0; 
+  color: #666; 
   text-decoration: none;
   border-radius: 99px; 
   padding: 8px 12px; 
-  transition: 
-    background-color 0.3s ease, 
-    color 0.3s ease, 
-    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.navLink:hover:not(.active) {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #FFFFFF;
-}
-.label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-left: 6px;
-  white-space: nowrap;
-  overflow: hidden; 
-  opacity: 0;
-  max-width: 0;
-  transition: 
-    opacity 0.2s ease-out, 
-    max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.icon {
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-.navLink.active {
-  color: #D4AF37;
-  background-color: rgba(212, 175, 55, 0.15);
-  padding: 8px 16px; 
-}
-.navLink.active .label {
-  opacity: 1;
-  max-width: 100px; 
-  transition-delay: 0.05s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-/* === MOBİL ÇIKIŞ BUTONU STİLLERİ === */
+.navLink:hover:not(.active) {
+  color: #aaa;
+  background-color: rgba(255,255,255,0.03);
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+  white-space: nowrap;
+  
+  /* Animasyonlu Açılma */
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+/* Aktif Durum */
+.navLink.active {
+  color: #fff;
+  background-color: var(--primary-color);
+}
+
+.navLink.active .label {
+  max-width: 100px; /* Yeterli genişlik */
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.navLink.active .icon {
+  color: #fff;
+}
+
+/* Çıkış Butonu */
 .logoutButtonMobile {
   background: none;
   border: none;
   cursor: pointer;
   font-family: inherit; 
 }
+.navLink.logoutButtonMobile.active {
+  background-color: #e74c3c;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
 .navLink.logoutButtonMobile:hover {
   color: #e74c3c; 
-  background-color: rgba(231, 76, 60, 0.1); 
 }

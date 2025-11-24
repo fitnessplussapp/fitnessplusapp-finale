@@ -1,702 +1,545 @@
 // src/pages/Coach/CoachSchedulePage.tsx
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import styles from './CoachSchedulePage.module.css'; 
-import formStyles from '../../components/Form/Form.module.css';
-import Modal from '../../components/Modal/Modal';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight, 
-  UserPlus, 
-  Info,
-  UserCheck,
-  ShieldAlert,
-  HelpCircle,
-  Calendar as CalendarIcon,
-  RotateCcw
+  ArrowLeft, Loader2, ChevronLeft, ChevronRight, Calendar, 
+  Users, Clock, Trash2, X, Plus, AlertTriangle, CheckCircle, Ban, ChevronDown
 } from 'lucide-react';
 
-// === Firebase ve Servis Importları ===
+import styles from './CoachSchedulePage.module.css';
+import Modal from '../../components/Modal/Modal';
+import { useAuth } from '../../context/AuthContext';
+
+// Firebase Servisleri
 import { 
   getCoachMembers, 
-  getCoachScheduleForDay,
-  setAppointment,
-  deleteAppointment,
-  updateDocWithCount 
+  getCoachEventsForDay,
+  createCoachEvent,
+  updateCoachEvent,
+  deleteCoachEvent,
+  updateDocWithCount
 } from '../../firebase/firestoreService';
-import type { DocumentData } from 'firebase/firestore';
-import { Timestamp, doc, increment } from 'firebase/firestore'; 
-import { db } from '../../firebase/firebaseConfig'; 
-// ------------------------------------------
+import type { CoachEvent, EventParticipant } from '../../firebase/firestoreService';
 
+import { db } from '../../firebase/firebaseConfig';
+import { doc, increment } from 'firebase/firestore';
 
-// --- Tipler ---
+// --- TİPLER ---
 interface CoachMember {
   id: string;
   name: string;
   currentSessionCount: number;
   packageEndDate: Date | null;
 }
-interface Appointment {
-  id: string; 
-  memberId: string;
-  memberName: string;
-  time: string; 
-}
-interface TimeSlot {
-  time: string; 
-  appointment: Appointment | null;
-}
-interface ModalState {
-  isOpen: boolean;
-  time: string | null; 
-  appointment: Appointment | null;
-}
-interface DeleteModalState {
-  isOpen: boolean;
-  appointment: Appointment | null;
-}
-interface RefundModalState {
-  isOpen: boolean;
-  memberId: string;
-  memberName: string;
-}
-// -----------------
 
-// === Saat dilimleri listesi (07:00 - 21:00 arası) ===
-const generateTimeSlots = (): string[] => {
-  const slots: string[] = [];
-  for (let hour = 7; hour <= 21; hour++) {
-    slots.push(`${hour.toString().padStart(2, '0')}:00`);
-  }
-  return slots;
-};
-const TIME_SLOTS = generateTimeSlots();
+interface RemovalState {
+  isOpen: boolean;
+  target: 'participant' | 'event' | null;
+  participantId?: string;
+  isGuest?: boolean;
+}
 
-// === Tarih Yardımcı Fonksiyonları ===
+// --- YARDIMCI FONKSİYONLAR ---
 const getLocalDateString = (date: Date): string => {
-  return date.toLocaleDateString('en-CA'); 
+  return date.toLocaleDateString('en-CA'); // YYYY-MM-DD
 };
+
 const getWeekDays = (baseDate: Date) => {
-  const days: Date[] = [];
-  const todayIndex = baseDate.getDay();
-  const diffToMonday = todayIndex === 0 ? -6 : 1 - todayIndex;
-  const monday = new Date(baseDate);
-  monday.setDate(baseDate.getDate() + diffToMonday);
+  const current = new Date(baseDate);
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1); // Pazartesiye git
+  
+  const monday = new Date(current.setDate(diff));
+  const days = [];
   for (let i = 0; i < 7; i++) {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + i);
-    days.push(day);
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
   }
   return days;
 };
 
+// 07:00 - 22:00 arası slotlar
+const WORK_HOURS = Array.from({ length: 16 }, (_, i) => {
+  const h = i + 7; 
+  return `${h.toString().padStart(2, '0')}:00`;
+});
 
 const CoachSchedulePage: React.FC = () => {
   const { currentUser } = useAuth();
-  const coachId = currentUser?.username; 
+  const coachId = currentUser?.username;
+
+  // --- STATE ---
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [weekDays, setWeekDays] = useState<Date[]>([]);
+  const [events, setEvents] = useState<CoachEvent[]>([]);
+  const [members, setMembers] = useState<CoachMember[]>([]);
   
-  // State'ler
-  const [currentDate, setCurrentDate] = useState(new Date()); // Navigasyon için baz tarih
-  const [selectedDay, setSelectedDay] = useState<Date>(new Date()); // Seçili gün
-  const [coachMembers, setCoachMembers] = useState<CoachMember[]>([]);
-  
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  
-  const [modal, setModal] = useState<ModalState>({ isOpen: false, time: null, appointment: null });
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<DeleteModalState>({ isOpen: false, appointment: null });
-  const [refundModal, setRefundModal] = useState<RefundModalState>({ isOpen: false, memberId: '', memberName: '' });
-  
-  const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingSchedule, setLoadingSchedule] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [processLoading, setProcessLoading] = useState(false);
+  
+  // Modallar
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isParticipantModalOpen, setIsParticipantModalOpen] = useState(false);
+  
+  // Silme/İade State
+  const [removalState, setRemovalState] = useState<RemovalState>({ isOpen: false, target: null });
+  
+  // Seçili Veriler
+  const [selectedEvent, setSelectedEvent] = useState<CoachEvent | null>(null);
+  
+  // Form State
+  const [eventType, setEventType] = useState<'personal' | 'group'>('personal');
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventStart, setEventStart] = useState('09:00'); 
+  const [eventEnd, setEventEnd] = useState('10:00');
+  const [eventQuota, setEventQuota] = useState(10);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  
+  // Katılımcı Ekleme Formu
+  const [participantType, setParticipantType] = useState<'existing' | 'guest'>('existing');
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [addMemberId, setAddMemberId] = useState('');
 
-  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
-  const todayString = getLocalDateString(new Date());
-
-  // YENİ: Ay ve Yıl bilgisini navigasyondaki ilk güne (Pazartesi) göre hesapla
-  const monthYearString = useMemo(() => {
-    const firstDayOfWeek = weekDays[0];
-    return firstDayOfWeek.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-  }, [weekDays]);
-
-  // === Veri Çekme: Koçun tüm üyeleri ===
-  const fetchAllCoachMembers = useCallback(async () => {
-    if (!coachId) return;
-    try {
-      const membersData = await getCoachMembers(coachId);
-      setCoachMembers(membersData.map(m => {
-        const endDate = m.packageEndDate instanceof Timestamp 
-                        ? m.packageEndDate.toDate() 
-                        : null;
-        return { 
-          id: m.id, 
-          name: m.name,
-          currentSessionCount: m.currentSessionCount || 0,
-          packageEndDate: endDate 
-        };
-      }));
-    } catch (err: any) {
-      setError("Üyeleriniz çekilemedi: " + err.message);
-    }
-  }, [coachId]);
-
-  // === Veri Çekme: Seçili GÜN'ün programı ===
-  const fetchScheduleForDay = useCallback(async (day: Date) => {
-    if (!coachId) return;
-    setLoadingSchedule(true);
-    setError(null);
-    try {
-      const dayString = getLocalDateString(day);
-      const snapshot = await getCoachScheduleForDay(coachId, dayString);
-      const dayAppointments = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Appointment));
-      setAppointments(dayAppointments);
-    } catch (err: any) {
-      setError("Program verisi çekilemedi: " + err.message);
-    } finally {
-      setLoadingSchedule(false);
-    }
-  }, [coachId]);
-
-  // İlk Yükleme
+  // --- HAFTA HESAPLAMA ---
   useEffect(() => {
-    if (!coachId) {
-      setError("Koç bilgisi bulunamadı.");
-      setLoading(false);
-      return;
-    }
+    setWeekDays(getWeekDays(currentDate));
+  }, [currentDate]);
+
+  // --- VERİ ÇEKME ---
+  const fetchAllData = useCallback(async () => {
+    if (!coachId) return;
     setLoading(true);
-    Promise.all([
-      fetchAllCoachMembers(),
-      fetchScheduleForDay(selectedDay)
-    ]).finally(() => setLoading(false));
-  }, [fetchAllCoachMembers, fetchScheduleForDay, selectedDay, coachId]);
-
-
-  // === Filtreleme & Slot Hazırlığı ===
-  const availableMembers = useMemo(() => {
-    const scheduledMemberIds = new Set(appointments.map(a => a.memberId));
-    if (modal.appointment) {
-      scheduledMemberIds.delete(modal.appointment.memberId);
-    }
-    return coachMembers.filter(m => !scheduledMemberIds.has(m.id));
-  }, [coachMembers, appointments, modal.appointment]);
-
-  const timeSlots: TimeSlot[] = useMemo(() => {
-    return TIME_SLOTS.map(time => {
-      const appointment = appointments.find(a => a.time === time) || null;
-      return { time, appointment };
-    });
-  }, [appointments]);
-
-
-  // === Navigasyon İşlevleri ===
-  const handleSelectDay = (day: Date) => {
-    setSelectedDay(day);
-    fetchScheduleForDay(day);
-  };
-  
-  const changeWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -7 : 7));
-    setCurrentDate(newDate);
-  };
-
-  const goToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    setSelectedDay(today);
-    fetchScheduleForDay(today);
-  };
-
-  // === Modal Aç/Kapa ===
-  const openModal = (time: string, appointment: Appointment | null) => {
-    setModal({ isOpen: true, time, appointment });
-  };
-  const closeModal = () => {
-    setModal({ isOpen: false, time: null, appointment: null });
-  };
-  const openDeleteConfirmModal = (appointment: Appointment) => {
-    closeModal();
-    setDeleteConfirmModal({ isOpen: true, appointment });
-  };
-  const closeDeleteConfirmModal = () => {
-    setDeleteConfirmModal({ isOpen: false, appointment: null });
-  };
-
-  // === İade Modalı ===
-  const handleRefundModalClose = () => {
-    setRefundModal({ isOpen: false, memberId: '', memberName: '' });
-    fetchScheduleForDay(selectedDay);
-    fetchAllCoachMembers();
-  };
-
-  const handleConfirmRefund = async (refund: boolean) => {
-    setIsDeleting(true); 
-    setError(null);
     try {
-      if (refund) {
-        const memberDocRef = doc(db, 'coaches', coachId!, 'members', refundModal.memberId);
-        await updateDocWithCount(memberDocRef, { 
-          currentSessionCount: increment(1) 
-        });
-      }
-    } catch (err: any) {
-      setError("Seans iade işlemi başarısız oldu: " + err.message);
+      const dateStr = getLocalDateString(currentDate);
+      
+      // 1. Üyeleri Çek
+      const membersData = await getCoachMembers(coachId);
+      setMembers(membersData.map(m => ({
+        id: m.id,
+        name: m.name,
+        currentSessionCount: m.currentSessionCount || 0,
+        packageEndDate: m.packageEndDate?.toDate() || null
+      })));
+
+      // 2. Etkinlikleri Çek
+      const eventsSnap = await getCoachEventsForDay(coachId, dateStr);
+      const loadedEvents = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() } as CoachEvent));
+      setEvents(loadedEvents);
+
+    } catch (error) {
+      console.error("Veri hatası:", error);
     } finally {
-      setIsDeleting(false);
-      handleRefundModalClose();
+      setLoading(false);
     }
+  }, [coachId, currentDate]);
+
+  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+
+  // --- NAVİGASYON ---
+  const handlePrevWeek = () => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() - 7);
+    setCurrentDate(d);
+  };
+  const handleNextWeek = () => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + 7);
+    setCurrentDate(d);
+  };
+  const handleToday = () => setCurrentDate(new Date());
+  const handleDaySelect = (date: Date) => setCurrentDate(date);
+
+  // --- SLOT TIKLAMA (Yeni Etkinlik) ---
+  const handleSlotClick = (time: string) => {
+    setEventStart(time);
+    const [h, m] = time.split(':').map(Number);
+    const endH = h + 1;
+    setEventEnd(`${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+    
+    // Form Reset
+    setEventTitle('');
+    setSelectedMemberId('');
+    setEventType('personal');
+    setEventQuota(10);
+    setIsEventModalOpen(true);
   };
 
-  // === Randevu Kaydetme ===
-  const handleSaveAppointment = async (e: React.FormEvent) => {
+  // --- ETKİNLİK DETAY ---
+  const handleEventClick = (evt: CoachEvent, e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    setSelectedEvent(evt);
+    setIsDetailModalOpen(true);
+  };
+
+  // --- YENİ ETKİNLİK OLUŞTURMA ---
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coachId || !modal.time) return;
+    if (!coachId) return;
+    setProcessLoading(true);
 
-    const formData = new FormData(e.target as HTMLFormElement);
-    const memberSelection = formData.get('memberId') as string;
-    
-    if (!memberSelection) {
-      setError("Lütfen bir üye seçin.");
-      return;
-    }
-
-    const [memberId, memberName] = memberSelection.split('|');
-    const selectedMember = coachMembers.find(m => m.id === memberId);
-    
-    if (!selectedMember) {
-        setError("Seçilen üye verisi bulunamadı.");
-        return;
-    }
-
-    const isEditingThisMember = (modal.appointment && modal.appointment.memberId === memberId);
-    if (!isEditingThisMember) {
-        if (selectedMember.currentSessionCount <= 0) {
-            setError("Bu üyenin (0) seansı kalmamıştır.");
-            setLoadingSchedule(false); 
-            return;
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); 
-        const isPackageActive = selectedMember.packageEndDate ? selectedMember.packageEndDate.getTime() >= today.getTime() : false;
-        
-        if (!isPackageActive) {
-            setError("Bu üyenin aktif paket süresi dolmuştur.");
-            setLoadingSchedule(false); 
-            return;
-        }
-    }
-
-    const dayString = getLocalDateString(selectedDay);
-    const timeString = modal.time.replace(':', '');
-    const scheduleId = `${dayString}-${timeString}`;
-
-    const appointmentData = {
-      coachId: coachId,
-      memberId: memberId,
-      memberName: memberName,
-      day: dayString,
-      time: modal.time,
-      timestamp: Timestamp.fromDate(
-        new Date(`${dayString}T${modal.time}:00`)
-      )
-    };
-    
-    setLoadingSchedule(true);
-    const oldAppointment = modal.appointment; 
-    closeModal();
-    
     try {
-      const memberDocRef = doc(db, 'coaches', coachId, 'members', memberId);
-      if (oldAppointment) {
-        if (oldAppointment.memberId !== memberId) {
-          await updateDocWithCount(memberDocRef, { currentSessionCount: increment(-1) });
-          await setAppointment(coachId, scheduleId, appointmentData);
-          setRefundModal({ 
-            isOpen: true, 
-            memberId: oldAppointment.memberId, 
-            memberName: oldAppointment.memberName 
+      const participants: EventParticipant[] = [];
+      let title = eventTitle;
+
+      if (eventType === 'personal') {
+        if (!selectedMemberId) {
+          setProcessLoading(false);
+          return alert("Lütfen üye seçin.");
+        }
+        const member = members.find(m => m.id === selectedMemberId);
+        if (member) {
+          title = member.name;
+          participants.push({ memberId: member.id, name: member.name, isGuest: false });
+          
+          // Bakiyeden düş
+          await updateDocWithCount(doc(db, 'coaches', coachId, 'members', member.id), {
+            currentSessionCount: increment(-1)
           });
-        } else {
-          await setAppointment(coachId, scheduleId, appointmentData);
-          await fetchScheduleForDay(selectedDay); 
         }
-      } else {
-        await updateDocWithCount(memberDocRef, { currentSessionCount: increment(-1) });
-        await setAppointment(coachId, scheduleId, appointmentData);
-        await fetchScheduleForDay(selectedDay);
-        await fetchAllCoachMembers();
       }
-    } catch (err: any) {
-      setError("Randevu kaydedilemedi: " + err.message);
-      setLoadingSchedule(false);
-    }
-  };
 
-  // === Randevu Silme ===
-  const handleDeleteAppointment = async () => {
-    if (!coachId || !deleteConfirmModal.appointment) return;
-    
-    setIsDeleting(true);
-    setLoadingSchedule(true);
-    const deletedApp = deleteConfirmModal.appointment; 
-    
-    try {
-      await deleteAppointment(coachId, deletedApp.id);
-      closeDeleteConfirmModal(); 
-      setRefundModal({ 
-        isOpen: true, 
-        memberId: deletedApp.memberId, 
-        memberName: deletedApp.memberName 
-      });
-    } catch (err: any) {
-      setError("Randevu silinemedi: " + err.message);
+      const newEvent = {
+        type: eventType,
+        title: title || 'Yeni Etkinlik',
+        date: getLocalDateString(currentDate),
+        startTime: eventStart,
+        endTime: eventEnd,
+        quota: eventType === 'personal' ? 1 : eventQuota,
+        participants: participants
+      };
+
+      await createCoachEvent(coachId, newEvent);
+      setIsEventModalOpen(false);
+      fetchAllData();
+    } catch (err) {
+      console.error(err);
+      alert("Etkinlik oluşturulurken hata oluştu.");
     } finally {
-      setIsDeleting(false);
-      setLoadingSchedule(false); 
+      setProcessLoading(false);
     }
   };
 
+  // --- KATILIMCI EKLEME ---
+  const handleAddParticipant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEvent || !coachId) return;
+    if (selectedEvent.participants.length >= selectedEvent.quota) return alert("Kontenjan dolu!");
+    
+    setProcessLoading(true);
+    try {
+      let newParticipant: EventParticipant;
+      if (participantType === 'existing') {
+        const member = members.find(m => m.id === addMemberId);
+        if (!member) throw new Error("Üye seçilmedi.");
+        if (selectedEvent.participants.some(p => p.memberId === member.id)) throw new Error("Bu üye zaten ekli.");
+        
+        await updateDocWithCount(doc(db, 'coaches', coachId, 'members', member.id), { currentSessionCount: increment(-1) });
+        newParticipant = { memberId: member.id, name: member.name, isGuest: false };
+      } else {
+        newParticipant = { memberId: `guest_${Date.now()}`, name: guestName, phone: guestPhone, isGuest: true };
+      }
+
+      const updatedParticipants = [...selectedEvent.participants, newParticipant];
+      await updateCoachEvent(coachId, selectedEvent.id, { participants: updatedParticipants });
+      setSelectedEvent({ ...selectedEvent, participants: updatedParticipants });
+      setIsParticipantModalOpen(false);
+      fetchAllData();
+    } catch (err: any) { 
+        alert(err.message); 
+    } finally { 
+        setProcessLoading(false); 
+    }
+  };
+
+  // --- SİLME / İADE YÖNETİMİ ---
+  const initiateRemoveParticipant = (participantId: string, isGuest: boolean) => {
+    setRemovalState({ isOpen: true, target: 'participant', participantId, isGuest });
+  };
+  const initiateDeleteEvent = () => {
+    setRemovalState({ isOpen: true, target: 'event' });
+  };
   
-  if (loading) {
-    return (
-      <div className={styles.schedulePage} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <Loader2 size={32} className={formStyles.spinner} />
-      </div>
-    );
-  }
+  const handleConfirmRemoval = async (shouldRefund: boolean) => {
+    if (!coachId || !selectedEvent) return;
+    setProcessLoading(true);
+    try {
+      if (removalState.target === 'participant' && removalState.participantId) {
+        if (!removalState.isGuest && shouldRefund) {
+          await updateDocWithCount(doc(db, 'coaches', coachId, 'members', removalState.participantId), { currentSessionCount: increment(1) });
+        }
+        const updatedList = selectedEvent.participants.filter(p => p.memberId !== removalState.participantId);
+        await updateCoachEvent(coachId, selectedEvent.id, { participants: updatedList });
+        setSelectedEvent({ ...selectedEvent, participants: updatedList });
+      } 
+      else if (removalState.target === 'event') {
+        if (shouldRefund) {
+          await Promise.all(selectedEvent.participants.map(async (p) => {
+            if (!p.isGuest) await updateDocWithCount(doc(db, 'coaches', coachId, 'members', p.memberId), { currentSessionCount: increment(1) });
+          }));
+        }
+        await deleteCoachEvent(coachId, selectedEvent.id);
+        setIsDetailModalOpen(false);
+        setSelectedEvent(null);
+      }
+      setRemovalState({ isOpen: false, target: null });
+      fetchAllData();
+    } catch (error) { 
+        console.error(error); 
+        alert("Hata oluştu."); 
+    } finally { 
+        setProcessLoading(false); 
+    }
+  };
 
   return (
-    <>
-      <div className={styles.schedulePage}>
-        
-        {/* --- 1. Header ve Kontroller --- */}
-        <div className={styles.headerContainer}>
-          <div className={styles.headerTop}>
-            <h1 className={styles.pageTitle}>Programım</h1>
-            <button onClick={goToToday} className={styles.todayButton}>
-              <RotateCcw size={16} />
-              Bugün
-            </button>
+    <div className={styles.schedulePage}>
+      
+      {/* HEADER */}
+      <div className={styles.headerContainer}>
+        <div className={styles.headerTop}>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.pageTitle}>Ders Programım</h1>
           </div>
-
-          <div className={styles.navigationControl}>
-            <button onClick={() => changeWeek('prev')} className={styles.navButton}>
-              <ChevronLeft size={24} />
-            </button>
-            
-            <div className={styles.monthLabel}>
-              <CalendarIcon size={18} />
-              {monthYearString}
-            </div>
-
-            <button onClick={() => changeWeek('next')} className={styles.navButton}>
-              <ChevronRight size={24} />
-            </button>
-          </div>
-
-          {/* Gün Seçimi (Horizontal Scroll) */}
-          <div className={styles.daysStripContainer}>
-            {weekDays.map(day => {
-              const dayStr = getLocalDateString(day);
-              const isSelected = dayStr === getLocalDateString(selectedDay);
-              const isToday = dayStr === todayString;
-              
-              return (
-                <div 
-                  key={day.toISOString()}
-                  className={`
-                    ${styles.dayCard} 
-                    ${isSelected ? styles.selectedDay : ''}
-                    ${isToday ? styles.today : ''}
-                  `}
-                  onClick={() => handleSelectDay(day)}
-                >
-                  <span className={styles.dayName}>
-                    {day.toLocaleDateString('tr-TR', { weekday: 'short' })}
-                  </span>
-                  <span className={styles.dayNumber}>
-                    {day.getDate()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <button className={styles.todayButton} onClick={handleToday}>
+             <Clock size={14} /> Bugün
+          </button>
         </div>
-        
-        {error && (
-          <div className={formStyles.error} style={{ margin: '1rem 0' }}>
-            {error}
-          </div>
-        )}
 
-        {/* --- 2. Saat Dilimleri Listesi --- */}
-        <div className={styles.timeSlotList}>
-          {loadingSchedule && (
-            <div className={styles.listOverlay}>
-              <Loader2 size={32} className={formStyles.spinner} />
-            </div>
-          )}
-          
-          {timeSlots.length === 0 && (
-            <p>Saat dilimleri yüklenemedi.</p>
-          )}
-
-          {timeSlots.map(slot => (
-            slot.appointment ? (
-              // --- Dolu Slot ---
-              <div 
-                key={slot.time} 
-                className={`${styles.timeSlot} ${styles.filledSlot}`}
-                onClick={() => openModal(slot.time, slot.appointment)}
-              >
-                <div className={styles.slotInfo}>
-                  <div className={styles.slotTime}>
-                    <UserCheck size={18} style={{color: '#D4AF37'}} />
-                    {slot.time}
-                  </div>
-                  <span className={styles.slotMemberName}>
-                    {slot.appointment.memberName}
-                  </span>
-                </div>
-                {/* İkon veya Aksiyon göstergesi gerekirse buraya */}
-              </div>
-            ) : (
-              // --- Boş Slot ---
-              <div 
-                key={slot.time} 
-                className={`${styles.timeSlot} ${styles.emptySlot}`}
-                onClick={() => openModal(slot.time, null)}
-              >
-                <div className={styles.slotTime}>
-                  {slot.time}
-                </div>
-                <span className={styles.slotAction}>
-                  <UserPlus size={16} />
-                  Üye Ata
+        <div className={styles.monthNav}>
+            <button className={styles.navArrow} onClick={handlePrevWeek}><ChevronLeft size={20}/></button>
+            <div className={styles.monthDisplay}>
+                <Calendar size={18} />
+                <span>
+                   {currentDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
                 </span>
-              </div>
-            )
-          ))}
+            </div>
+            <button className={styles.navArrow} onClick={handleNextWeek}><ChevronRight size={20}/></button>
         </div>
       </div>
 
-      {/* --- MODAL 1: Randevu Atama/Düzenleme --- */}
-      <Modal
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={modal.appointment ? 'Randevu Düzenle' : 'Yeni Randevu Ata'}
-      >
-        <form className={formStyles.form} onSubmit={handleSaveAppointment}>
-          <div className={formStyles.inputGroup}>
-            <label>Tarih</label>
-            <input 
-              type="text" 
-              className={formStyles.input} 
-              disabled 
-              value={`${selectedDay.toLocaleDateString('tr-TR', { dateStyle: 'full' })} - ${modal.time}`}
-            />
+      {/* HAFTA GÜNLERİ (GRID - ADMIN ILE AYNI) */}
+      <div className={styles.weekTabsContainer}>
+          {weekDays.map((day, index) => {
+              const isSelected = getLocalDateString(day) === getLocalDateString(currentDate);
+              const isToday = getLocalDateString(day) === getLocalDateString(new Date());
+              return (
+                  <button 
+                      key={index} 
+                      className={`${styles.dayTab} ${isSelected ? styles.dayTabActive : ''} ${isToday ? styles.dayTabToday : ''}`}
+                      onClick={() => handleDaySelect(day)}
+                  >
+                      <span className={styles.tabDayName}>{day.toLocaleDateString('tr-TR', { weekday: 'short' }).toUpperCase()}</span>
+                      <span className={styles.tabDayNumber}>{day.getDate()}</span>
+                  </button>
+              );
+          })}
+      </div>
+
+      {/* GRID (Ders Programı) */}
+      <div className={styles.gridContainer}>
+        {loading ? (
+           <div className={styles.loadingState}><Loader2 className={styles.spinner} size={32}/></div>
+        ) : (
+           WORK_HOURS.map(hour => {
+             const eventsInSlot = events.filter(e => e.startTime.startsWith(hour.split(':')[0])); 
+             
+             return (
+               <div key={hour} className={styles.timeSlot}>
+                 <div className={styles.slotHeader}>
+                    <span className={styles.slotTimeLabel}>{hour}</span>
+                    <button 
+                      className={styles.addIconBtn} 
+                      onClick={() => handleSlotClick(hour)}
+                      title="Ekle"
+                    >
+                      <Plus size={16} />
+                    </button>
+                 </div>
+
+                 <div className={styles.slotEventsList}>
+                    {eventsInSlot.length > 0 ? (
+                      eventsInSlot.map(evt => (
+                        <div 
+                          key={evt.id} 
+                          className={styles.miniEventCard} 
+                          onClick={(e) => handleEventClick(evt, e)}
+                        >
+                            <div className={styles.miniCardHeader}>
+                                <span className={styles.miniTitle}>{evt.title}</span>
+                                <span className={`${styles.miniBadge} ${evt.type === 'personal' ? styles.badgePersonal : styles.badgeGroup}`}>
+                                  {evt.type === 'personal' ? 'PT' : 'GRP'}
+                                </span>
+                            </div>
+                            <div className={styles.miniMeta}>
+                                <Users size={12} /> 
+                                {evt.participants.length}/{evt.quota}
+                            </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.emptyStatePlaceholder} onClick={() => handleSlotClick(hour)}>
+                         <span style={{fontSize:'0.8rem'}}>Boş</span>
+                      </div>
+                    )}
+                 </div>
+               </div>
+             );
+           })
+        )}
+      </div>
+
+      {/* --- MODALLAR --- */}
+      
+      <Modal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} title="Ders Planla">
+        <form onSubmit={handleCreateEvent} className={styles.modalForm}>
+          <div className={styles.segmentControl}>
+            <button type="button" className={`${styles.segmentBtn} ${eventType === 'personal' ? styles.segmentBtnActive : ''}`} onClick={() => setEventType('personal')}>Bireysel</button>
+            <button type="button" className={`${styles.segmentBtn} ${eventType === 'group' ? styles.segmentBtnActive : ''}`} onClick={() => setEventType('group')}>Grup</button>
           </div>
-          
-          <div className={formStyles.inputGroup}>
-            <label htmlFor="memberId">Atanacak Üye</label>
-            
-            {availableMembers.length === 0 && !modal.appointment && (
-              <div className={styles.noMemberWarning}>
-                <Info size={16} />
-                <span>Bu gün için atanabilecek başka üye kalmadı.</span>
+
+          <div className={styles.formGrid}>
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>Başlangıç</label>
+              <input type="time" className={styles.customInput} value={eventStart} onChange={e => setEventStart(e.target.value)} required />
+            </div>
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>Bitiş</label>
+              <input type="time" className={styles.customInput} value={eventEnd} onChange={e => setEventEnd(e.target.value)} required />
+            </div>
+          </div>
+
+          {eventType === 'personal' ? (
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>Üye Seçin</label>
+              <div className={styles.selectWrapper}>
+                <select className={styles.customSelect} value={selectedMemberId} onChange={e => setSelectedMemberId(e.target.value)} required>
+                  <option value="">-- Listeden Seçin --</option>
+                  {members.map(m => (
+                    <option key={m.id} value={m.id} disabled={m.currentSessionCount <= 0}>
+                      {m.name} (Hak: {m.currentSessionCount})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className={styles.selectIcon} />
               </div>
-            )}
+            </div>
+          ) : (
+            <>
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Ders Adı</label>
+                <input type="text" className={styles.customInput} placeholder="Örn: Pilates" value={eventTitle} onChange={e => setEventTitle(e.target.value)} required />
+              </div>
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Kişi Kotası</label>
+                <input type="number" className={styles.customInput} value={eventQuota} onChange={e => setEventQuota(Number(e.target.value))} min="1" required />
+              </div>
+            </>
+          )}
 
-            <select 
-              id="memberId" 
-              name="memberId" 
-              className={formStyles.input}
-              defaultValue={
-                modal.appointment 
-                ? `${modal.appointment.memberId}|${modal.appointment.memberName}` 
-                : ""
-              }
-              required
-            >
-              <option value="" disabled>-- Üye Seçin --</option>
-              
-              {/* Mevcut üyeyi düzenleme sırasında listele */}
-              {modal.appointment && 
-                coachMembers.find(m => m.id === modal.appointment?.memberId) &&
-                (() => {
-                  const member = coachMembers.find(m => m.id === modal.appointment!.memberId)!;
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0); 
-                  const isPackageActive = member.packageEndDate ? member.packageEndDate.getTime() >= today.getTime() : false;
-                  
-                  let label = ` (Mevcut: ${member.currentSessionCount})`;
-                  if (!isPackageActive) {
-                    label = ` (Mevcut, Paket Dolmuş: ${member.currentSessionCount})`;
-                  }
-                  return (
-                    <option 
-                      key={member.id} 
-                      value={`${member.id}|${member.name}`}
-                    >
-                      {member.name} {label}
-                    </option>
-                  );
-                })()
-              }
-              
-              {/* Diğer uygun üyeleri listele */}
-              {availableMembers
-                .filter(m => m.id !== modal.appointment?.memberId) 
-                .map(member => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0); 
-                  const isPackageActive = member.packageEndDate ? member.packageEndDate.getTime() >= today.getTime() : false;
-                  const hasSessions = member.currentSessionCount > 0;
-                  const isSelectable = isPackageActive && hasSessions;
-
-                  let label = ` (Kalan: ${member.currentSessionCount})`;
-                  if (!isPackageActive) {
-                    label = " (Paket Süresi Dolmuş)";
-                  } else if (!hasSessions) {
-                    label = " (Seans Kalmadı)";
-                  }
-
-                  return (
-                    <option 
-                      key={member.id} 
-                      value={`${member.id}|${member.name}`}
-                      disabled={!isSelectable}
-                    >
-                      {member.name} {label}
-                    </option>
-                  );
-                })}
-            </select>
-          </div>
-
-          <div className={formStyles.formActions}>
-            <button 
-              type="button" 
-              onClick={closeModal} 
-              className={`${formStyles.submitButton} ${formStyles.secondary}`} 
-              disabled={isDeleting}
-            >
-              İptal
-            </button>
-            
-            {modal.appointment && (
-              <button 
-                type="button" 
-                onClick={() => openDeleteConfirmModal(modal.appointment!)} 
-                className={`${formStyles.submitButton} ${formStyles.danger}`} 
-                disabled={isDeleting}
-              >
-                Randevuyu Sil
-              </button>
-            )}
-
-            <button 
-              type="submit" 
-              className={`${formStyles.submitButton} ${formStyles.primary}`} 
-              disabled={isDeleting}
-            >
-              {modal.appointment ? 'Güncelle' : 'Kaydet'}
+          <div className={styles.formActions}>
+            <button type="button" className={`${styles.actionBtn} ${styles.btnSecondary}`} onClick={() => setIsEventModalOpen(false)}>Vazgeç</button>
+            <button type="submit" className={`${styles.actionBtn} ${styles.btnPrimary}`} disabled={processLoading}>
+               {processLoading ? <Loader2 className={styles.spinner} size={20}/> : 'Oluştur'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* --- MODAL 2: Silme Onayı --- */}
-      <Modal
-        isOpen={deleteConfirmModal.isOpen}
-        onClose={closeDeleteConfirmModal}
-        title="Randevu Silme Onayı"
-      >
-        {deleteConfirmModal.appointment && (
-          <div className={styles.modalBody}>
-            <ShieldAlert size={40} className={styles.iconReject} />
-            <p>
-              <strong>{deleteConfirmModal.appointment.memberName}</strong> adlı üyenin
-              <br />
-              {selectedDay.toLocaleDateString('tr-TR', { dateStyle: 'full' })} - <strong>{deleteConfirmModal.appointment.time}</strong>
-              <br />
-              randevusunu silmek istediğinizden emin misiniz?
-            </p>
-            <small>Bu işlem sonrası seans iadesi sorulacaktır.</small>
-
-            {error && <p className={styles.modalError}>{error}</p>}
-
-            <div className={formStyles.formActions}>
-              <button
-                type="button"
-                onClick={closeDeleteConfirmModal}
-                className={`${formStyles.submitButton} ${formStyles.secondary}`}
-                disabled={isDeleting}
-              >
-                İptal
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAppointment}
-                className={`${formStyles.submitButton} ${formStyles.danger}`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? <Loader2 size={18} className={formStyles.spinner} /> : 'Evet, Sil'}
-              </button>
+      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title="Ders Detayı">
+        {selectedEvent && (
+          <div className={styles.detailContainer}>
+            <div className={styles.eventInfoBox}>
+              <h3 className={styles.infoTitle}>{selectedEvent.title}</h3>
+              <div className={styles.infoMeta}>
+                <span><Clock size={14} style={{verticalAlign:'middle'}}/> {selectedEvent.startTime} - {selectedEvent.endTime}</span>
+                <span>{selectedEvent.participants.length} / {selectedEvent.quota} Kişi</span>
+              </div>
             </div>
+
+            <div className={styles.participantsHeader}>
+                <h4>Katılımcılar</h4>
+                <button className={styles.miniAddBtn} onClick={() => setIsParticipantModalOpen(true)} disabled={selectedEvent.participants.length >= selectedEvent.quota}>
+                    <Plus size={14}/> Ekle
+                </button>
+            </div>
+
+            <div className={styles.participantList}>
+              {selectedEvent.participants.length === 0 && <p className={styles.noData}>Liste boş.</p>}
+              {selectedEvent.participants.map((p, idx) => (
+                <div key={idx} className={styles.participantRow}>
+                  <div className={styles.pInfo}>
+                    <span className={styles.pName}>{p.name}</span>
+                    <span className={styles.pType}>{p.isGuest ? 'Misafir' : 'Üye'}</span>
+                  </div>
+                  <button className={styles.removeBtn} onClick={() => initiateRemoveParticipant(p.memberId, p.isGuest)}><X size={16}/></button>
+                </div>
+              ))}
+            </div>
+            <button className={styles.deleteEventBtn} onClick={initiateDeleteEvent}><Trash2 size={16}/> Dersi İptal Et</button>
           </div>
         )}
       </Modal>
 
-      {/* --- MODAL 3: Seans İadesi --- */}
-      <Modal
-        isOpen={refundModal.isOpen}
-        onClose={handleRefundModalClose}
-        title="Seans İadesi Onayı"
-      >
-        <div className={styles.modalBody}>
-          <HelpCircle size={40} className={styles.iconRefund} />
-          <p>
-            <strong>{refundModal.memberName}</strong> adlı üyenin 
-            bu randevu için kullanılan 1 seansı boşa çıktı.
-            <br/><br/>
-            Bu 1 seansı üyeye <strong>geri iade etmek</strong> istiyor musunuz?
+      <Modal isOpen={isParticipantModalOpen} onClose={() => setIsParticipantModalOpen(false)} title="Derse Kişi Ekle">
+        <form onSubmit={handleAddParticipant} className={styles.modalForm}>
+           <div className={styles.segmentControl}>
+              <button type="button" className={`${styles.segmentBtn} ${participantType === 'existing' ? styles.segmentBtnActive : ''}`} onClick={() => setParticipantType('existing')}>Üye</button>
+              <button type="button" className={`${styles.segmentBtn} ${participantType === 'guest' ? styles.segmentBtnActive : ''}`} onClick={() => setParticipantType('guest')}>Misafir</button>
+           </div>
+
+           {participantType === 'existing' ? (
+             <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Üye Seçimi</label>
+                <div className={styles.selectWrapper}>
+                  <select className={styles.customSelect} value={addMemberId} onChange={e => setAddMemberId(e.target.value)} required>
+                      <option value="">Seçiniz</option>
+                      {members.map(m => (
+                          <option key={m.id} value={m.id} disabled={m.currentSessionCount <= 0 || selectedEvent?.participants.some(p => p.memberId === m.id)}>
+                              {m.name} ({m.currentSessionCount})
+                          </option>
+                      ))}
+                  </select>
+                  <ChevronDown size={16} className={styles.selectIcon} />
+                </div>
+             </div>
+           ) : (
+             <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Misafir Adı</label>
+                <input className={styles.customInput} value={guestName} onChange={e => setGuestName(e.target.value)} required />
+             </div>
+           )}
+           <div className={styles.formActions}>
+             <button type="submit" className={`${styles.actionBtn} ${styles.btnPrimary}`} disabled={processLoading}>Listeye Ekle</button>
+           </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={removalState.isOpen} onClose={() => setRemovalState({isOpen:false, target:null})} title="İptal İşlemi">
+        <div className={styles.confirmBody}>
+          <div className={styles.confirmIconContainer}>
+             <AlertTriangle size={36} color="#f59e0b" />
+          </div>
+          <p className={styles.confirmText}>
+             {removalState.target === 'event' ? "Ders tamamen silinecek." : "Kişi listeden çıkarılacak."}
+             <br/>
+             <strong>Hakkı iade edilsin mi?</strong>
           </p>
-          <small>
-            'Evet' derseniz üyenin seans hakkı 1 artar.
-          </small>
-
-          {error && <p className={styles.modalError}>{error}</p>}
-
-          <div className={formStyles.formActions}>
-            <button
-              type="button"
-              onClick={() => handleConfirmRefund(false)} // Hayır
-              className={`${formStyles.submitButton} ${formStyles.secondary}`}
-              disabled={isDeleting}
-            >
-              {isDeleting ? <Loader2 size={18} className={formStyles.spinner} /> : 'Hayır (İade Etme)'}
+          <div className={styles.refundActions}>
+            <button className={styles.refundButton} onClick={() => handleConfirmRemoval(true)} disabled={processLoading}>
+              <CheckCircle size={18} className={styles.successIcon}/> <div><span className={styles.btnTitle}>Evet, İade Et</span><span className={styles.btnDesc}>Bakiye geri yüklenir.</span></div>
             </button>
-            <button
-              type="button"
-              onClick={() => handleConfirmRefund(true)} // Evet
-              className={`${formStyles.submitButton} ${formStyles.primary}`}
-              disabled={isDeleting}
-            >
-              {isDeleting ? <Loader2 size={18} className={formStyles.spinner} /> : 'Evet, İade Et'}
+            <button className={`${styles.refundButton} ${styles.noRefund}`} onClick={() => handleConfirmRemoval(false)} disabled={processLoading}>
+              <Ban size={18} className={styles.dangerIcon}/> <div><span className={styles.btnTitle}>Hayır, Yanmasına İzin Ver</span><span className={styles.btnDesc}>Bakiye değişmez.</span></div>
             </button>
           </div>
         </div>
       </Modal>
-    </>
+
+    </div>
   );
 };
 

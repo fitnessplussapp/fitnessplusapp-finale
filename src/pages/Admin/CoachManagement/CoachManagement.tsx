@@ -9,36 +9,37 @@ import {
   Edit, 
   Users,
   Loader2,
-  AlertTriangle,
-  Percent, // <-- Bu artık kullanılmıyor ama kalabilir
-  Calendar
+  Calendar,
+  DollarSign,
+  MoreHorizontal,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
-// Firebase importları
+// Firebase
 import { db } from '../../../firebase/firebaseConfig';
 import { collection, query, orderBy, doc, getDocs, updateDoc } from 'firebase/firestore'; 
-import { getDocsWithCount, updateDocWithCount } from '../../../firebase/firestoreService';
+import { getDocsWithCount, updateDocWithCount, deleteDocWithCount } from '../../../firebase/firestoreService';
 
-// Gerekli bileşenleri import ediyoruz
+// Bileşenler
 import Switch from '../../../components/Switch/Switch';
 import AddCoach from './AddCoach';
 import EditCoach from './EditCoach';
 import Modal from '../../../components/Modal/Modal'; 
 
-// GÜNCELLEME: Koç Tipi (share kaldırıldı)
-interface CoachData {
+// --- TİP TANIMI ---
+export interface CoachData {
   id: string; 
   username: string;
   isActive: boolean;
   totalMembers: number; 
-  // share: { ... } // KALDIRILDI
+  companyCut: number; // YENİ: Şirket payı gösterimi için
+  customFields?: { [key: string]: any };
 }
 
-interface ConfirmModalState {
-  isOpen: boolean;
-  coach: CoachData | null;
-  newStatus: boolean;
-}
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(value);
+};
 
 const CoachManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -50,14 +51,8 @@ const CoachManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isToggling, setIsToggling] = useState<string | null>(null); 
-  const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
-    isOpen: false,
-    coach: null,
-    newStatus: false,
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // fetchCoaches (Otomatik Onarım Özellikli)
-  // (Bu fonksiyonda değişiklik yapmaya gerek yok, 'share' objesini okumuyordu)
   const fetchCoaches = async () => {
     setIsLoading(true);
     setError(null);
@@ -70,33 +65,31 @@ const CoachManagement: React.FC = () => {
       const coachListPromises = querySnapshot.docs.map(async (coachDoc) => {
         const coachData = coachDoc.data();
         
+        // Üye sayısını doğrula (Otomatik Onarım)
         const membersColRef = collection(db, 'coaches', coachDoc.id, 'members');
         const membersSnapshot = await getDocs(membersColRef); 
         const realMemberCount = membersSnapshot.size;
         
         if (coachData.totalMembers !== realMemberCount) {
-          console.warn(`Tutarsızlık bulundu: Koç ${coachData.username} için ${coachData.totalMembers} yazıyor, ancak ${realMemberCount} olmalı. Düzeltiliyor...`);
           const coachRef = doc(db, 'coaches', coachDoc.id);
           await updateDoc(coachRef, { totalMembers: realMemberCount }); 
         }
 
         return {
           id: coachDoc.id,
-          ...coachData,
+          username: coachData.username,
+          isActive: coachData.isActive,
           totalMembers: realMemberCount,
+          companyCut: coachData.companyCut || 0, // Finansal veri
+          customFields: coachData.customFields || {}
         } as CoachData;
       });
 
       const coachList = await Promise.all(coachListPromises);
-      
       setCoaches(coachList);
     } catch (err: any) {
       console.error("Koçlar çekilemedi:", err);
-      if (err.code === 'permission-denied') {
-        setError("Verileri okuma yetkiniz yok. Firestore kurallarını kontrol edin.");
-      } else {
-        setError("Koç verileri yüklenirken bir hata oluştu.");
-      }
+      setError("Veri yüklenirken hata oluştu.");
     } finally {
       setIsLoading(false);
     }
@@ -106,182 +99,166 @@ const CoachManagement: React.FC = () => {
     fetchCoaches();
   }, []);
 
-  // handleToggleStatus (Değişiklik yok)
+  // --- DURUM DEĞİŞTİRME (AKTİF/PASİF) ---
   const handleToggleStatus = async (coach: CoachData, newStatus: boolean) => {
     setIsToggling(coach.id); 
-    setError(null);
     try {
       const coachRef = doc(db, 'coaches', coach.id);
       await updateDocWithCount(coachRef, { isActive: newStatus });
-      setCoaches(currentCoaches =>
-        currentCoaches.map(c =>
-          c.id === coach.id ? { ...c, isActive: newStatus } : c
-        )
-      );
-    } catch (err: any) {
-      console.error("Durum güncellenemedi:", err);
-      setError("Durum güncellenirken bir hata oluştu.");
+      setCoaches(prev => prev.map(c => c.id === coach.id ? { ...c, isActive: newStatus } : c));
+    } catch (err) {
+      console.error(err);
+      alert("Durum güncellenemedi.");
     } finally {
       setIsToggling(null); 
     }
   };
 
-  // Diğer fonksiyonlar (Değişiklik yok)
-  const handleConfirmCancel = () => {
-    setConfirmModal({ isOpen: false, coach: null, newStatus: false });
-  };
-  const handleConfirmAccept = async () => {
-    const { coach, newStatus } = confirmModal;
-    if (coach) {
-      await handleToggleStatus(coach, newStatus);
-    }
-    handleConfirmCancel();
-  };
-  const handleOpenEditModal = (coach: CoachData) => {
-    setSelectedCoach(coach);
-    setIsEditModalOpen(true);
-  };
-  const handleViewDetails = (coachId: string) => {
-    navigate(`/admin/coaches/${coachId}`);
-  };
-  const handleViewSchedule = (coachId: string) => {
-    navigate(`/admin/coaches/${coachId}/schedule`);
-  };
+  // --- SİLME İŞLEMİ (RECURSIVE DELETE) ---
+  // Bu fonksiyon EditCoach modalından tetiklenecek
+  const handleCoachDelete = async (coachId: string) => {
+    setIsDeleting(true);
+    try {
+        // 1. Koçun tüm üyelerini bul
+        const membersRef = collection(db, 'coaches', coachId, 'members');
+        const membersSnap = await getDocs(membersRef);
 
-  const actionText = confirmModal.newStatus ? "AKTİF" : "PASİF";
-  const coachName = confirmModal.coach?.username || "";
+        // 2. Her üyenin paketlerini ve kendisini sil
+        for (const memberDoc of membersSnap.docs) {
+            const packagesRef = collection(memberDoc.ref, 'packages');
+            const packagesSnap = await getDocs(packagesRef);
+            
+            // Paketleri sil
+            const deletePackagesPromises = packagesSnap.docs.map(p => deleteDocWithCount(p.ref));
+            await Promise.all(deletePackagesPromises);
+
+            // Üyeyi sil
+            await deleteDocWithCount(memberDoc.ref);
+        }
+
+        // 3. Koçun programını (schedule) sil
+        const scheduleRef = collection(db, 'coaches', coachId, 'schedule');
+        const scheduleSnap = await getDocs(scheduleRef);
+        const deleteSchedulePromises = scheduleSnap.docs.map(s => deleteDocWithCount(s.ref));
+        await Promise.all(deleteSchedulePromises);
+
+        // 4. Koçu sil
+        await deleteDocWithCount(doc(db, 'coaches', coachId));
+
+        // UI Güncelle
+        setIsEditModalOpen(false);
+        fetchCoaches();
+
+    } catch (err) {
+        console.error("Silme hatası:", err);
+        alert("Koç silinirken bir hata oluştu. Konsolu kontrol edin.");
+    } finally {
+        setIsDeleting(false);
+    }
+  };
 
   return (
-    <>
-      <div className={styles.coachPage}>
+    <div className={styles.coachPage}>
         
-        <div className={styles.listContainer}>
-          
-          <div className={styles.listHeader}>
-            <h2 className={styles.listTitle}>Koç Kadrosu</h2>
+        {/* Header */}
+        <header className={styles.header}>
+            <div>
+                <h1 className={styles.pageTitle}>Koç Yönetimi</h1>
+                <p className={styles.pageSubtitle}>Sistemdeki antrenörleri ve performanslarını yönetin.</p>
+            </div>
             <button className={styles.addButton} onClick={() => setIsAddModalOpen(true)}>
-              <Plus size={18} />
-              <span>Yeni Koç Ekle</span>
+                <Plus size={18} />
+                <span>Yeni Koç Ekle</span>
             </button>
-          </div>
+        </header>
 
-          <div className={styles.listContent}>
-            
-            {/* Yükleme, Hata, Boş durumları (Değişiklik yok) */}
-            {isLoading && (
-              <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-                <Loader2 size={24} className={formStyles.spinner} />
-                <span>Koçlar Yükleniyor...</span>
-              </div>
-            )}
-            {error && (
-              <div className={formStyles.error} style={{ margin: '1rem' }}>{error}</div>
-            )}
-            {!isLoading && !error && coaches.length === 0 && (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
-                Henüz hiç koç eklenmemiş. "Yeni Koç Ekle" butonu ile başlayın.
-              </div>
-            )}
-
-            {!isLoading && !error && coaches.map((coach) => (
-              <div key={coach.id} className={styles.coachItem}>
-                
-                <div className={styles.coachInfo}>
-                  <div className={styles.coachDetails}>
-                    <span className={styles.coachName}>{coach.username}</span>
-                    <div className={styles.coachStats}>
-                        <span>
-                            <Users size={14} />
-                            {coach.totalMembers} Üye
-                        </span>
+        {/* Content */}
+        {isLoading ? (
+            <div style={{ padding: '3rem', display: 'flex', justifyContent: 'center' }}>
+                <Loader2 size={32} className={formStyles.spinner} />
+            </div>
+        ) : error ? (
+            <div className={formStyles.error}>{error}</div>
+        ) : coaches.length === 0 ? (
+            <div style={{textAlign:'center', padding:'3rem', color:'#666', border:'1px dashed #333', borderRadius:'12px'}}>
+                Henüz koç bulunmuyor.
+            </div>
+        ) : (
+            <div className={styles.coachGrid}>
+                {coaches.map(coach => (
+                    <div key={coach.id} className={styles.coachCard}>
                         
-                        {/* === HATA DÜZELTMESİ (AŞAĞIDAKİ BÖLÜM KALDIRILDI) ===
-                          Hatanın kaynağı buydu. 'coach.share' artık yok.
-                        <span>
-                            <Percent size={14} />
-                            {coach.share.type === '%' ? `${coach.share.value}% Pay` : `${coach.share.value} TL Pay`}
-                        </span>
-                        */}
+                        {/* Card Header: Avatar & Info */}
+                        <div className={styles.cardHeader}>
+                            <div className={styles.coachIdentity}>
+                                <div className={styles.avatar}>
+                                    {coach.username.charAt(0).toUpperCase()}
+                                </div>
+                                <div className={styles.coachInfo}>
+                                    <span className={styles.coachName}>{coach.username}</span>
+                                    <span className={`${styles.statusBadge} ${coach.isActive ? styles.statusActive : styles.statusPassive}`}>
+                                        {coach.isActive ? 'Aktif' : 'Pasif'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {/* Switch (Toggle Status) */}
+                            <Switch 
+                                checked={coach.isActive}
+                                onChange={(val) => handleToggleStatus(coach, val)}
+                                disabled={isToggling === coach.id}
+                            />
+                        </div>
+
+                        {/* Card Stats */}
+                        <div className={styles.cardStats}>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}><Users size={14}/> Üye Sayısı</span>
+                                <span className={styles.statValue}>{coach.totalMembers}</span>
+                            </div>
+                            <div className={styles.statItem}>
+                                <span className={styles.statLabel}><DollarSign size={14}/> Kazanç (Şirket)</span>
+                                <span className={`${styles.statValue} ${styles.highlight}`}>
+                                    {formatCurrency(coach.companyCut)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Card Actions */}
+                        <div className={styles.cardActions}>
+                            <button className={styles.actionButton} onClick={() => navigate(`/admin/coaches/${coach.id}/schedule`)}>
+                                <Calendar size={16}/> Program
+                            </button>
+                            <button className={styles.actionButton} onClick={() => { setSelectedCoach(coach); setIsEditModalOpen(true); }}>
+                                <Edit size={16}/> Düzenle
+                            </button>
+                            <button className={`${styles.actionButton} ${styles.primaryBtn}`} onClick={() => navigate(`/admin/coaches/${coach.id}`)}>
+                                <Users size={16}/> Üyeler
+                            </button>
+                        </div>
+
                     </div>
-                  </div>
-                </div>
-                
-                <div className={styles.coachStatus}>
-                  <Switch 
-                    checked={coach.isActive}
-                    onChange={(newCheckedState) => {
-                      setConfirmModal({
-                        isOpen: true,
-                        coach: coach,
-                        newStatus: newCheckedState
-                      });
-                    }}
-                    disabled={isToggling === coach.id} 
-                  />
-                </div>
-                
-                <div className={styles.coachActions}>
-                  <button 
-                    className={styles.actionButton}
-                    onClick={() => handleOpenEditModal(coach)}
-                  >
-                    <Edit size={16} />
-                    <span className={styles.actionButtonText}>Düzenle</span>
-                  </button>
-                  
-                  <button 
-                    className={styles.actionButton}
-                    onClick={() => handleViewSchedule(coach.id)}
-                  >
-                    <Calendar size={16} />
-                    <span className={styles.actionButtonText}>Program</span>
-                  </button>
-                  
-                  <button 
-                    className={`${styles.actionButton} ${styles.primaryActionButton}`}
-                    onClick={() => handleViewDetails(coach.id)}
-                  >
-                    <Users size={16} />
-                    <span className={styles.actionButtonText}>Üyeler</span>
-                  </button>
-                </div>
+                ))}
+            </div>
+        )}
 
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        {/* Modallar */}
+        <AddCoach 
+            isOpen={isAddModalOpen} 
+            onClose={() => setIsAddModalOpen(false)} 
+            onCoachAdded={fetchCoaches} 
+        />
 
-      {/* Modallar (Değişiklik yok) */}
-      <AddCoach 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onCoachAdded={fetchCoaches} 
-      />
-      <EditCoach 
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        coach={selectedCoach}
-        onCoachUpdated={fetchCoaches} 
-      />
-      
-      <Modal 
-        isOpen={confirmModal.isOpen} 
-        onClose={handleConfirmCancel} 
-        title="Durum Değişikliğini Onayla"
-      >
-        <div className={styles.confirmModalBody}>
-          <AlertTriangle size={48} className={styles.confirmIcon} />
-          <p>
-            Koç <strong>{coachName}</strong> için durumu <strong>{actionText}</strong> olarak değiştirmek istediğinizden emin misiniz?
-          </p>
-          <div className={styles.confirmActions}>
-            <button className={styles.cancelButton} onClick={handleConfirmCancel}>İptal</button>
-            <button className={styles.confirmButton} onClick={handleConfirmAccept}>Evet, Değiştir</button>
-          </div>
-        </div>
-      </Modal>
-    </>
+        <EditCoach 
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            coach={selectedCoach}
+            onCoachUpdated={fetchCoaches}
+            onCoachDeleted={handleCoachDelete} // YENİ: Silme fonksiyonunu prop olarak geçiyoruz
+            isDeleting={isDeleting}
+        />
+
+    </div>
   );
 };
 

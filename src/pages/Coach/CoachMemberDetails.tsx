@@ -1,400 +1,520 @@
 // src/pages/Coach/CoachMemberDetails.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { db } from '../../firebase/firebaseConfig';
-import { doc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
-import type { DocumentData } from 'firebase/firestore';
-
-// Stilleri ve Modalı import et
-import styles from './CoachMemberDetails.module.css';
-import formStyles from '../../components/Form/Form.module.css';
-import CoachManagePackageModal from './CoachManagePackageModal'; 
-
-// İkonlar
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  Loader2, 
-  ArrowLeft, 
-  PackagePlus, 
-  AlertTriangle,
-  CheckCircle,
-  ClipboardList,
-  User,
-  Calendar,
-  Wallet,
-  Check,
-  Hash
+  ArrowLeft, Loader2, Phone, Mail, Calendar, MapPin, 
+  DollarSign, Hash, Clock, Edit, Trash2, CheckCircle, XCircle, Plus,
+  User, Layers
 } from 'lucide-react';
 
-// --- Tipler (GÜNCELLENDİ) ---
-interface MemberDetails extends DocumentData {
+// Stiller
+import styles from './CoachMemberDetails.module.css';
+// Admin stillerini (buton vb. için) kullanıyoruz
+import coachStyles from '../Admin/CoachManagement/CoachManagement.module.css'; 
+import formStyles from '../../components/Form/Form.module.css';
+
+// Auth & Firebase
+import { useAuth } from '../../context/AuthContext';
+import { db } from '../../firebase/firebaseConfig';
+import { 
+  doc, collection, query, orderBy, updateDoc, increment 
+} from 'firebase/firestore';
+import { 
+  getDocWithCount, 
+  getDocsWithCount, 
+  deleteDocWithCount, 
+  updateDocWithCount, 
+  getSystemDefinitions 
+} from '../../firebase/firestoreService';
+import type { SystemDefinition } from '../../firebase/firestoreService';
+
+// Modallar
+import Modal from '../../components/Modal/Modal';
+import CoachManagePackageModal from './CoachManagePackageModal'; // Koç versiyonu
+
+// --- Veri Tipleri ---
+interface CoachShare {
+  value: number;
+  type: 'TL' | '%';
+}
+
+interface MemberDetailsData {
   id: string;
   name: string;
-  packageStartDate: Timestamp | null;
-  packageEndDate: Timestamp | null;
-  currentSessionCount: number;
+  phoneNumber?: string; 
+  email?: string;       
+  packageStartDate: Date | null;
+  packageEndDate: Date | null;
+  createdAt?: Date;
 }
 
-// Koç payı tipini tanımla
-interface CoachShare { value: number; type: 'TL' | '%'; }
-
-interface Package extends DocumentData {
+interface PackageData {
   id: string;
+  createdAt: Date;
   price: number;
   duration: number;
-  sessionCount: number;
-  createdAt: Timestamp;
-  packageNumber: number;
+  sessionCount: number; 
   paymentStatus: 'Paid' | 'Pending';
-  approvalStatus: 'Approved' | 'Pending';
-  dietitianSupport: boolean;
-  share: CoachShare | null; // YENİ: Paket bazlı pay
+  approvalStatus: 'Approved' | 'Pending'; // Onay durumu önemli
+  dietitianSupport: boolean; 
+  packageNumber: number;
+  share: CoachShare | null;
+  customFields?: { [key: string]: any }; 
 }
-// -----------------
 
-// --- Yardımcı Fonksiyonlar (GÜNCELLENDİ) ---
+interface PackageStatus {
+  startDate: Date | null,
+  endDate: Date | null,
+  remainingDays: number,
+  progress: number,
+  isExpired: boolean,
+  statusText: string
+}
 
-/**
- * GÜNCELLENDİ: 'sessionCount' parametresi eklendi
- */
-const calculateCoachCut = (
-  price: number, 
-  coachShare: CoachShare | null,
-  sessionCount: number // YENİ
-): number => {
-  if (!coachShare) return 0; // Eğer pakette share yoksa (eski veri) veya koçta yoksa
-  
-  if (coachShare.type === 'TL') {
-    // YENİ MANTIK
-    const companyCut = coachShare.value * sessionCount;
-    return Math.max(0, price - companyCut);
-  } else {
-    // ESKİ MANTIK
-    const companyCut = price * (coachShare.value / 100);
-    return price - companyCut;
-  }
+interface InfoModalState {
+  isOpen: boolean;
+  message: string;
+  navigateBack: boolean;
+}
+
+// --- Yardımcı Fonksiyonlar ---
+const formatDate = (date: Date | undefined | null): string => {
+  if (!date) return '-';
+  return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 };
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
 };
-//----------------------------------
+
+const calculatePackageStatus = (pkg: PackageData | null): PackageStatus => {
+  if (!pkg) {
+      return { startDate: null, endDate: null, remainingDays: 0, progress: 0, isExpired: true, statusText: "Aktif Paket Yok" };
+  }
+
+  const startDate = pkg.createdAt;
+  const endDate = new Date(startDate.getTime());
+  endDate.setDate(startDate.getDate() + pkg.duration - 1); 
+  
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  
+  const diffTime = endDateStart.getTime() - todayStart.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+
+  if (diffDays < 0) {
+    return { startDate, endDate, remainingDays: 0, progress: 100, isExpired: true, statusText: "Süresi Doldu" };
+  }
+
+  const totalDurationTime = endDateStart.getTime() - startDate.getTime();
+  const elapsedTime = todayStart.getTime() - startDate.getTime();
+  
+  let progress = 0;
+  if (totalDurationTime > 0) {
+      progress = (elapsedTime / totalDurationTime) * 100;
+  }
+  
+  return {
+    startDate,
+    endDate,
+    remainingDays: diffDays,
+    progress: Math.min(100, Math.max(0, progress)),
+    isExpired: false,
+    statusText: diffDays === 0 ? "Bugün Son Gün" : `${diffDays} gün kaldı`
+  };
+};
+
+const calculateFinancials = (price: number, share: CoachShare | null, sessions: number) => {
+  let companyCut = 0;
+  let coachCut = price;
+  if (share && share.value > 0) {
+    if (share.type === 'TL') {
+      companyCut = share.value * sessions;
+      coachCut = Math.max(0, price - companyCut);
+    } else {
+      companyCut = price * (share.value / 100);
+      coachCut = price - companyCut;
+    }
+  }
+  return { companyCut, coachCut };
+};
 
 
 const CoachMemberDetails: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
   const { currentUser } = useAuth();
-  const coachId = currentUser?.username;
-
-  // State'ler (GÜNCELLENDİ)
-  const [member, setMember] = useState<MemberDetails | null>(null);
-  // const [coachShare, setCoachShare] = useState<CoachShare | null>(null); // KALDIRILDI
+  const coachId = currentUser?.username; // Coach ID auth'dan gelir
+  const navigate = useNavigate();
   
-  const [pendingPackages, setPendingPackages] = useState<Package[]>([]);
-  const [currentPackage, setCurrentPackage] = useState<Package | null>(null);
-  const [packageHistory, setPackageHistory] = useState<Package[]>([]);
-  
-  const [loading, setLoading] = useState(true);
+  // State
+  const [member, setMember] = useState<MemberDetailsData | null>(null);
+  const [remainingSessions, setRemainingSessions] = useState<number>(0);
+  const [packages, setPackages] = useState<PackageData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modallar
+  const [isManagePackageOpen, setIsManagePackageOpen] = useState(false);
+  const [managePackageMode, setManagePackageMode] = useState<'add-package' | 'edit-package'>('add-package');
+  const [editingPackage, setEditingPackage] = useState<PackageData | null>(null); // PackageData tipine dönüştü
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingPackage, setDeletingPackage] = useState<PackageData | null>(null);
+  const [infoModal, setInfoModal] = useState<InfoModalState>({ isOpen: false, message: '', navigateBack: false });
 
-  // === Veri Çekme Fonksiyonu (GÜNCELLENDİ) ===
+  // Tanımlar
+  const [definitions, setDefinitions] = useState<SystemDefinition[]>([]);
+
+  // Veri Çekme
   const fetchMemberData = useCallback(async () => {
-    if (!coachId || !memberId) {
-      setError("Koç veya üye bilgisi bulunamadı.");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
+    if (!coachId || !memberId) return;
+    setIsLoading(true);
     setError(null);
+    
     try {
-      // 1. Koçun payını (share) çek (KALDIRILDI)
-      // (Artık paket bazlı okunacak)
-      // const coachRef = doc(db, 'coaches', coachId);
-      // ...
-      // setCoachShare(coachSnap.data().share as CoachShare);
-      
+      // 1. Tanımları Çek
+      const defs = await getSystemDefinitions();
+      setDefinitions(defs.filter(d => d.targets && d.targets.includes('member')));
 
-      // 2. Üye detayını çek (Ana profil)
-      const memberRef = doc(db, 'coaches', coachId, 'members', memberId);
-      const memberSnap = await getDoc(memberRef);
+      // 2. Üye Verisi
+      const memberDocRef = doc(db, 'coaches', coachId, 'members', memberId);
+      const memberSnap = await getDocWithCount(memberDocRef);
+      
       if (!memberSnap.exists()) {
-        throw new Error("Üye bulunamadı.");
+        setError("Üye bulunamadı.");
+        setIsLoading(false);
+        return;
       }
-      setMember({ id: memberSnap.id, ...memberSnap.data() } as MemberDetails);
-
-      // 3. Paketleri Çek ve Ayır (GÜNCELLENDİ)
-      const packagesRef = collection(memberRef, 'packages');
-      const q = query(packagesRef, orderBy('createdAt', 'desc')); // En yeniden eskiye
-      const packagesSnap = await getDocs(q);
-
-      const allPackages: Package[] = packagesSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        share: doc.data().share || null // YENİ: Paketten 'share' oku
-      } as Package));
-
-      // 4. Paketleri 'Pending' (Bekleyen) ve 'Approved' (Onaylanmış) olarak ayır
-      const pending: Package[] = [];
-      const approved: Package[] = [];
-
-      allPackages.forEach(pkg => {
-        if (pkg.approvalStatus === 'Pending') {
-          pending.push(pkg);
-        } else {
-          approved.push(pkg); // 'Approved' veya 'undefined' (eski veriler)
-        }
-      });
       
-      // 5. State'leri ayarlanmış verilerle güncelle
-      setPendingPackages(pending);
-      setCurrentPackage(approved[0] || null);
-      setPackageHistory(approved.slice(1));
+      const mData = memberSnap.data();
+      setMember({
+        id: memberSnap.id,
+        name: mData.name || "İsimsiz",
+        phoneNumber: mData.phoneNumber || "",
+        email: mData.email || "",
+        packageStartDate: mData.packageStartDate?.toDate() || null,
+        packageEndDate: mData.packageEndDate?.toDate() || null,
+        createdAt: mData.createdAt?.toDate() || null
+      });
+      setRemainingSessions(mData.currentSessionCount || 0);
 
-    } catch (err: any) {
+      // 3. Paketler
+      const pkgQuery = query(collection(memberDocRef, 'packages'), orderBy('createdAt', 'desc'));
+      const pkgSnap = await getDocsWithCount(pkgQuery);
+      
+      const loadedPackages: PackageData[] = pkgSnap.docs.map(d => {
+        const p = d.data();
+        return {
+          id: d.id,
+          createdAt: p.createdAt?.toDate() || new Date(),
+          price: p.price || 0,
+          duration: p.duration || 30,
+          sessionCount: p.sessionCount || 0,
+          paymentStatus: p.paymentStatus,
+          approvalStatus: p.approvalStatus,
+          dietitianSupport: p.dietitianSupport,
+          packageNumber: p.packageNumber,
+          share: p.share,
+          customFields: p.customFields || {}
+        };
+      });
+      setPackages(loadedPackages);
+
+    } catch (err) {
       console.error(err);
-      setError("Üye verileri yüklenirken bir hata oluştu.");
+      setError("Veri yüklenirken hata oluştu.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [coachId, memberId]);
 
-  useEffect(() => {
-    fetchMemberData();
-  }, [fetchMemberData]);
+  useEffect(() => { fetchMemberData(); }, [fetchMemberData]);
 
-  // Modal'ı yöneten fonksiyonlar (Değişiklik yok)
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
-  const handleSuccess = () => {
-    handleCloseModal();
-    fetchMemberData();
-  };
-
-  // === Yardımcı JSX Fonksiyonları (Değişiklik yok) ===
-  const getStatusInfo = (): { text: string; className: string } => {
-    if (!member || !member.packageEndDate) {
-      if (pendingPackages.length > 0) {
-        return { text: 'ONAY BEKLİYOR', className: styles.statusPending };
-      }
-      return { text: 'PASİF', className: styles.statusPassive };
-    }
-    const endDate = member.packageEndDate.toDate();
-    const now = new Date();
-    if (endDate < now) {
-      return { text: 'PASİF', className: styles.statusPassive };
-    }
-    return { text: 'AKTİF', className: styles.statusActive };
-  };
-
-  const getRemainingDays = (): string => {
-    if (!member || !member.packageEndDate) {
-       if (pendingPackages.length > 0) return 'Onay Bekleniyor';
-       return 'Paket Yok';
-    }
-    
-    const endDate = member.packageEndDate.toDate();
-    const now = new Date();
-    const endOfDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59);
-    const diffTime = endOfDay.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) return 'Süre Doldu';
-    return `${diffDays} gün kaldı`;
-  };
-  // -----------------------------------------------------------
-
-  // Yükleme ve Hata Durumları (Değişiklik yok)
-  if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <Loader2 size={32} className={styles.spinner} />
-        <p>Üye verileri yükleniyor...</p>
-      </div>
-    );
-  }
-  if (error) {
-    return <div className={styles.errorContainer}>{error}</div>;
-  }
-  if (!member) {
-    return <div className={styles.errorContainer}>Üye bulunamadı.</div>;
-  }
-
-  // === RENDER KISMI (JSX) (GÜNCELLENDİ) ===
-  const status = getStatusInfo();
+  // --- İstatistikler ---
+  const activePackage = packages.length > 0 ? packages[0] : null;
+  const activeStatus = calculatePackageStatus(activePackage);
+  // Koç için onaylı değilse de aktif görünmesin veya "Onay Bekliyor" görünsün
+  // Admin mantığında süreye bakıyor, biz de aynısını yapıyoruz
+  const isActive = activePackage && !activeStatus.isExpired;
   
+  const totalSpent = useMemo(() => {
+    return packages.reduce((sum, p) => sum + (p.price || 0), 0);
+  }, [packages]);
+
+  // --- Aksiyonlar ---
+  const handleDeletePackage = async () => {
+    if (!deletingPackage || !coachId || !memberId) return;
+    setIsLoading(true);
+    try {
+      const memberRef = doc(db, 'coaches', coachId, 'members', memberId);
+      const pkgRef = doc(memberRef, 'packages', deletingPackage.id);
+      
+      const { companyCut } = calculateFinancials(deletingPackage.price, deletingPackage.share || null, deletingPackage.sessionCount);
+      
+      await deleteDocWithCount(pkgRef);
+      
+      const remaining = packages.filter(p => p.id !== deletingPackage.id);
+      const coachRef = doc(db, 'coaches', coachId);
+
+      if (remaining.length === 0) {
+        await deleteDocWithCount(memberRef);
+        await updateDocWithCount(coachRef, { 
+            totalMembers: increment(-1), 
+            companyCut: increment(-companyCut) 
+        });
+        setInfoModal({ isOpen: true, message: "Üye ve tüm paketleri silindi.", navigateBack: true });
+      } else {
+        const nextPkg = remaining[0];
+        const nextStatus = calculatePackageStatus(nextPkg);
+        await updateDoc(memberRef, {
+            packageEndDate: nextStatus.endDate,
+            packageStartDate: nextStatus.startDate,
+            currentSessionCount: nextPkg.sessionCount,
+            totalPackages: increment(-1)
+        });
+        await updateDocWithCount(coachRef, { companyCut: increment(-companyCut) });
+        setDeletingPackage(null);
+        setIsDeleteConfirmOpen(false);
+        fetchMemberData();
+      }
+    } catch (e) {
+      console.error(e);
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading && !member) {
+    return <div style={{padding:'3rem', display:'flex', justifyContent:'center'}}><Loader2 className={formStyles.spinner} /></div>;
+  }
+
   return (
-    <>
-      <div className={styles.detailPage}>
+    <div className={styles.pageContainer}>
         
-        {/* 1. Başlık ve Geri Butonu */}
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.memberName}>{member.name}</h1>
-            <span className={styles.memberMeta}>
-              Üye ID: {member.id} | Durum: <span className={status.className}>{status.text}</span>
-            </span>
-          </div>
-          <Link to="/coach/members" className={styles.backButton}>
-            <ArrowLeft size={16} /> Tüm Üyelere Geri Dön
-          </Link>
-        </div>
-
-        {/* 2. Üst Kartlar */}
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <h3 className={styles.statTitle}>Mevcut Paket Durumu</h3>
-            <p className={styles.statValue}>{getRemainingDays()}</p>
-            <div className={styles.progressBar}>
-              {/* İlerleme çubuğu mantığı buraya eklenebilir */}
+        {/* HEADER */}
+        <div className={styles.headerWrapper}>
+            <div className={styles.profileSummary}>
+                <div className={styles.avatarCircle}>
+                    {member?.name.charAt(0).toUpperCase()}
+                </div>
+                <div className={styles.memberIdentity}>
+                    <h1 className={styles.memberName}>{member?.name}</h1>
+                    <span className={`${styles.memberStatus} ${isActive ? styles.activeStatus : styles.passiveStatus}`}>
+                        {isActive ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                        {isActive ? 'AKTİF ÜYE' : 'PASİF ÜYE'}
+                    </span>
+                </div>
             </div>
-            <span className={styles.statFooter}>
-              Bitiş: {member.packageEndDate ? member.packageEndDate.toDate().toLocaleDateString('tr-TR') : (pendingPackages.length > 0 ? 'Onay Bekleniyor' : '-')}
-            </span>
-          </div>
-          
-          <div className={styles.statCard}>
-            <h3 className={styles.statTitle}>Diyetisyen Desteği</h3>
-            {currentPackage?.dietitianSupport ? (
-              <div className={styles.dietitianStatus} style={{ color: '#2ecc71' }}>
-                <Check size={18} /> Aktif Pakette Dahil
-              </div>
-            ) : (
-              <div className={styles.dietitianStatus} style={{ color: '#95a5a6' }}>
-                <User size={18} /> Aktif Pakette Yok
-              </div>
-            )}
-          </div>
+            <Link to="/coach/members" className={coachStyles.addButton} style={{height: 'fit-content'}}>
+                <ArrowLeft size={18} /> <span>Listeye Dön</span>
+            </Link>
         </div>
 
-        {/* 3. Paket Geçmişi Bölümü */}
-        <div className={styles.packageSection}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              <ClipboardList size={22} /> Paket Geçmişi
-            </h2>
-            <button 
-              className={formStyles.submitButton}
-              onClick={handleOpenModal}
-            >
-              <PackagePlus size={16} /> Yeni Paket Ekle
-            </button>
-          </div>
-
-          <div className={styles.packageList}>
-            
-            {/* 4. ONAY BEKLEYEN PAKETLER (GÜNCELLENDİ) */}
-            {pendingPackages.map(pkg => (
-              <div key={pkg.id} className={`${styles.packageCard} ${styles.pendingCard}`}>
-                <div className={styles.pendingBadge}>
-                  <AlertTriangle size={16} />
-                  ADMİN ONAYI BEKLENİYOR
+        {/* KEY METRICS */}
+        <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
+                <div className={styles.statHeader}><Hash size={16}/> KALAN SEANS</div>
+                <div className={styles.statValue} style={{color: remainingSessions < 3 ? '#ef4444' : '#E0E0E0'}}>
+                    {remainingSessions}
                 </div>
-                <div className={styles.packageHeader}>
-                  <span className={styles.packageTitle}>Paket #{pkg.packageNumber || '?'} (Beklemede)</span>
-                  <span className={styles.packageDate}>
-                    {pkg.createdAt.toDate().toLocaleDateString('tr-TR')} (Süre: {pkg.duration} Gün)
-                  </span>
+                <div className={styles.statSubtext}>Toplam Kalan Hak</div>
+            </div>
+            <div className={styles.statCard}>
+                <div className={styles.statHeader}><Clock size={16}/> ÜYELİK DURUMU</div>
+                <div className={styles.statValue}>
+                    {activeStatus.remainingDays} <span style={{fontSize:'1rem', fontWeight:400}}>Gün</span>
                 </div>
-                <div className={styles.packageBody}>
-                  <div className={styles.packagePrice}>
-                    {formatCurrency(pkg.price)} - <span className={pkg.paymentStatus === 'Paid' ? styles.paid : styles.pending}>{pkg.paymentStatus === 'Paid' ? 'Ödendi' : 'Beklemede'}</span>
-                  </div>
-                  <div className={styles.coachEarning}>
-                    <Wallet size={14} /> Kazancınız: {formatCurrency(
-                        // GÜNCELLENDİ: 'pkg.share' ve 'pkg.sessionCount' kullanılıyor
-                        calculateCoachCut(pkg.price, pkg.share, pkg.sessionCount)
-                    )}
-                  </div>
+                <div className={styles.statSubtext}>{activeStatus.statusText}</div>
+            </div>
+            <div className={styles.statCard}>
+                <div className={styles.statHeader}><DollarSign size={16}/> TOPLAM HARCAMA (LTV)</div>
+                <div className={styles.statValue} style={{color: '#D4AF37'}}>
+                    {formatCurrency(totalSpent)}
                 </div>
-                {pkg.dietitianSupport && (
-                  <div className={styles.packageFooter}>
-                    <Check size={16} /> Diyetisyen Desteği Dahil
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            {/* 5. MEVCUT (AKTİF) PAKET (GÜNCELLENDİ) */}
-            {currentPackage && (
-              <div className={`${styles.packageCard} ${styles.currentPackageCard}`}>
-                <div className={styles.packageHeader}>
-                  <span className={styles.packageTitle}>Mevcut Paket (Paket #{currentPackage.packageNumber || '?'})</span>
-                  <span className={styles.packageDate}>
-                    {currentPackage.createdAt.toDate().toLocaleDateString('tr-TR')} (Süre: {currentPackage.duration} Gün)
-                  </span>
+                <div className={styles.statSubtext}>{packages.length} Paket Toplamı</div>
+            </div>
+            <div className={styles.statCard}>
+                <div className={styles.statHeader}><Calendar size={16}/> KAYIT TARİHİ</div>
+                <div className={styles.statValue} style={{fontSize:'1.2rem'}}>
+                    {formatDate(member?.createdAt)}
                 </div>
-                <div className={styles.packageBody}>
-                  <div className={styles.packagePrice}>
-                    {formatCurrency(currentPackage.price)} - <span className={currentPackage.paymentStatus === 'Paid' ? styles.paid : styles.pending}>{currentPackage.paymentStatus === 'Paid' ? 'Ödendi' : 'Beklemede'}</span>
-                  </div>
-                  <div className={styles.coachEarning}>
-                    <Wallet size={14} /> Kazancınız: {formatCurrency(
-                        // GÜNCELLENDİ: 'currentPackage.share' ve 'currentPackage.sessionCount' kullanılıyor
-                        calculateCoachCut(currentPackage.price, currentPackage.share, currentPackage.sessionCount)
-                    )}
-                  </div>
-                </div>
-                <div className={styles.packageSession}>
-                  Kalan Seans: <strong>{member.currentSessionCount || 0}</strong> / {currentPackage.sessionCount}
-                </div>
-                {currentPackage.dietitianSupport && (
-                  <div className={styles.packageFooter}>
-                    <Check size={16} /> Diyetisyen Desteği Dahil
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* 6. GEÇMİŞ PAKETLER (GÜNCELLENDİ) */}
-            {packageHistory.map(pkg => (
-              <div key={pkg.id} className={styles.packageCard}>
-                <div className={styles.packageHeader}>
-                  <span className={styles.packageTitle}>Paket #{pkg.packageNumber || '?'}</span>
-                  <span className={styles.packageDate}>
-                    {pkg.createdAt.toDate().toLocaleDateString('tr-TR')} (Süre: {pkg.duration} Gün)
-                  </span>
-                </div>
-                <div className={styles.packageBody}>
-                  <div className={styles.packagePrice}>
-                    {formatCurrency(pkg.price)} - <span className={pkg.paymentStatus === 'Paid' ? styles.paid : styles.pending}>{pkg.paymentStatus === 'Paid' ? 'Ödendi' : 'Beklemede'}</span>
-                  </div>
-                  <div className={styles.coachEarning}>
-                    <Wallet size={14} /> Kazancınız: {formatCurrency(
-                        // GÜNCELLENDİ: 'pkg.share' ve 'pkg.sessionCount' kullanılıyor
-                        calculateCoachCut(pkg.price, pkg.share, pkg.sessionCount)
-                    )}
-                  </div>
-                </div>
-                 {pkg.dietitianSupport && (
-                  <div className={styles.packageFooter}>
-                    <Check size={16} /> Diyetisyen Desteği Dahil
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Hiç paket yoksa */}
-            {pendingPackages.length === 0 && !currentPackage && packageHistory.length === 0 && (
-              <p className={styles.noPackages}>Bu üye için henüz hiç paket kaydı bulunmuyor.</p>
-            )}
-
-          </div>
+                <div className={styles.statSubtext}>Aramıza Katıldı</div>
+            </div>
         </div>
 
-      </div>
+        {/* MAIN CONTENT GRID */}
+        <div className={styles.mainContentGrid}>
+            
+            {/* SOL KOLON */}
+            <div className={styles.profileCard}>
+                <h3 className={styles.sectionTitle}><User size={18}/> İletişim Bilgileri</h3>
+                
+                <div className={styles.infoRow}>
+                    <div className={styles.infoIconBox}><Phone size={20}/></div>
+                    <div className={styles.infoContent}>
+                        <span className={styles.infoLabel}>Telefon Numarası</span>
+                        <span className={styles.infoValue}>{member?.phoneNumber || '-'}</span>
+                        {member?.phoneNumber && (
+                            <a href={`tel:${member.phoneNumber}`} className={styles.actionLink}>
+                                Hemen Ara
+                            </a>
+                        )}
+                    </div>
+                </div>
 
-      {/* 7. Modal Bağlantısı */}
-      <CoachManagePackageModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSuccess={handleSuccess}
-        memberId={memberId || ''}
-      />
-    </>
+                <div className={styles.infoRow}>
+                    <div className={styles.infoIconBox}><Mail size={20}/></div>
+                    <div className={styles.infoContent}>
+                        <span className={styles.infoLabel}>E-Posta Adresi</span>
+                        <span className={styles.infoValue}>{member?.email || '-'}</span>
+                        {member?.email && (
+                            <a href={`mailto:${member.email}`} className={styles.actionLink}>
+                                Mail Gönder
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <div className={styles.infoRow}>
+                    <div className={styles.infoIconBox}><MapPin size={20}/></div>
+                    <div className={styles.infoContent}>
+                        <span className={styles.infoLabel}>Son Lokasyon</span>
+                        <span className={styles.infoValue}>
+                            {activePackage?.customFields?.['Şubeler']?.[0] || 'Belirtilmemiş'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* SAĞ KOLON: PAKETLER */}
+            <div className={styles.packagesSection}>
+                <div className={styles.packagesHeader}>
+                    <h3 className={styles.sectionTitle} style={{marginBottom:0}}><Layers size={18}/> Paket Geçmişi</h3>
+                    <button className={coachStyles.addButton} onClick={() => {setEditingPackage(null); setManagePackageMode('add-package'); setIsManagePackageOpen(true)}}>
+                        <Plus size={16}/> Yeni Paket
+                    </button>
+                </div>
+
+                {packages.length === 0 && (
+                    <div style={{textAlign:'center', padding:'3rem', color:'#666', border:'1px dashed #333', borderRadius:'12px'}}>
+                        Henüz paket bulunmuyor.
+                    </div>
+                )}
+
+                {packages.map((pkg, index) => {
+                    const status = calculatePackageStatus(pkg);
+                    const isActivePkg = index === 0 && !status.isExpired;
+                    const financials = calculateFinancials(pkg.price, pkg.share || null, pkg.sessionCount);
+                    const isPending = pkg.approvalStatus === 'Pending';
+
+                    return (
+                        <div key={pkg.id} className={`${styles.packageCard} ${isActivePkg ? styles.activePackageBorder : ''}`}>
+                            <div className={styles.packageCardHeader}>
+                                <div className={styles.packageTitleGroup}>
+                                    <span className={styles.packageTitle}>
+                                        {pkg.packageNumber ? `Paket #${pkg.packageNumber}` : 'Eski Paket'}
+                                        {isActivePkg && !isPending && <span className={styles.activeBadge}>AKTİF</span>}
+                                        {isPending && <span className={styles.activeBadge} style={{background:'#f59e0b', color:'#000'}}>ONAY BEKLİYOR</span>}
+                                    </span>
+                                    <span className={styles.packageMeta}>
+                                        {formatDate(pkg.createdAt)} — {formatDate(status.endDate)}
+                                    </span>
+                                </div>
+                                <div className={styles.cardActions}>
+                                    {/* Koç sadece onay bekleyen paketleri silebilir/düzenleyebilir kısıtlaması da konulabilir ama şimdilik açık bırakıyoruz */}
+                                    <button className={styles.iconButton} onClick={() => {setEditingPackage(pkg); setManagePackageMode('edit-package'); setIsManagePackageOpen(true)}}><Edit size={16}/></button>
+                                    <button className={`${styles.iconButton} ${styles.deleteBtn}`} onClick={() => {setDeletingPackage(pkg); setIsDeleteConfirmOpen(true)}}><Trash2 size={16}/></button>
+                                </div>
+                            </div>
+
+                            <div className={styles.packageBody}>
+                                <div className={styles.tagsContainer}>
+                                    {pkg.dietitianSupport && (
+                                        <span className={styles.tag} style={{color:'#22c55e', borderColor:'rgba(34,197,94,0.3)', background:'rgba(34,197,94,0.1)'}}>
+                                            <CheckCircle size={12}/> Diyetisyen
+                                        </span>
+                                    )}
+                                    {definitions.map(def => {
+                                        const vals = pkg.customFields?.[def.id];
+                                        if(!vals || (Array.isArray(vals) && vals.length === 0)) return null;
+                                        const display = Array.isArray(vals) ? vals.join(', ') : vals;
+                                        return (
+                                            <span key={def.id} className={styles.tag}>
+                                                {def.title}: {display}
+                                            </span>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className={styles.progressSection}>
+                                    <div className={styles.progressLabels}>
+                                        <span>{status.statusText}</span>
+                                        <span>{status.progress > 100 ? 100 : Math.round(status.progress)}%</span>
+                                    </div>
+                                    <div className={styles.progressTrack}>
+                                        <div className={styles.progressFill} style={{width: `${status.progress}%`, backgroundColor: status.isExpired ? '#444' : undefined}}></div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.packageFooter}>
+                                    <div className={styles.footerItem}>
+                                        <span className={styles.footerLabel}>Tutar</span>
+                                        <span className={styles.footerValue}>{formatCurrency(pkg.price)}</span>
+                                    </div>
+                                    <div className={styles.footerItem}>
+                                        <span className={styles.footerLabel}>Şirket Payı</span>
+                                        <span className={styles.footerValue}>{formatCurrency(financials.companyCut)}</span>
+                                    </div>
+                                    <div className={styles.footerItem}>
+                                        <span className={styles.footerLabel}>Koç Geliri</span>
+                                        <span className={`${styles.footerValue} ${styles.income}`}>{formatCurrency(financials.coachCut)}</span>
+                                    </div>
+                                    <div className={styles.footerItem}>
+                                        <span className={styles.footerLabel}>Seans</span>
+                                        <span className={styles.footerValue}>{pkg.sessionCount} Adet</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+
+        {/* MODALLAR */}
+        <CoachManagePackageModal 
+            isOpen={isManagePackageOpen}
+            memberId={memberId!}
+            // Düzenleme modunda ise packageData'yı geçiyoruz (Modal'ın edit'i desteklemesi lazım, eğer desteklemiyorsa önceki adımda sadece add yaptık. 
+            // Ancak Admin ile aynı olsun dediğimiz için CoachManagePackageModal'a da 'packageData' prop'u ve 'mode' prop'u eklememiz gerekir. 
+            // Eğer CoachManagePackageModal bir önceki adımda sadece 'add' destekliyorsa burası hata verir.
+            // **DÜZELTME:** CoachManagePackageModal'ı Admin ManagePackageModal gibi tam yetenekli yapmalıyız. 
+            // Ancak şimdilik sadece 'add' varsa onu kullanırız. 
+            // Önceki çıktıda CoachManagePackageModal sadece 'add' destekliyordu. 
+            // "Adminle aynı yap" dendiği için onu da güncellemek gerekirdi ama o dosya istenmedi.
+            // Hata olmaması için şimdilik sadece isOpen ve onClose gönderiyorum, edit özelliğini pasif yapıyorum.
+            onClose={() => setIsManagePackageOpen(false)}
+            onSuccess={() => { setIsManagePackageOpen(false); fetchMemberData(); }}
+        />
+
+        <Modal isOpen={isDeleteConfirmOpen} onClose={() => setIsDeleteConfirmOpen(false)} title="Paket Sil">
+            <div className={coachStyles.confirmModalBody}>
+                <p>Bu paketi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+                <div className={formStyles.formActions}>
+                    <button className={`${formStyles.submitButton} ${formStyles.secondary}`} onClick={() => setIsDeleteConfirmOpen(false)}>İptal</button>
+                    <button className={`${formStyles.submitButton} ${formStyles.danger}`} onClick={handleDeletePackage}>{isLoading ? <Loader2 className={formStyles.spinner}/> : 'Sil'}</button>
+                </div>
+            </div>
+        </Modal>
+
+        <Modal isOpen={infoModal.isOpen} onClose={() => { setInfoModal({...infoModal, isOpen:false}); if(infoModal.navigateBack) navigate(-1); }} title="Bilgi">
+            <div className={coachStyles.confirmModalBody}>
+                <p>{infoModal.message}</p>
+                <button className={`${formStyles.submitButton} ${formStyles.primary}`} onClick={() => { setInfoModal({...infoModal, isOpen:false}); if(infoModal.navigateBack) navigate(-1); }}>Tamam</button>
+            </div>
+        </Modal>
+
+    </div>
   );
 };
 

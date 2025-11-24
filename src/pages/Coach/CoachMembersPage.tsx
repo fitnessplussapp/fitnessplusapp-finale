@@ -7,31 +7,25 @@ import {
   Loader2, 
   Plus, 
   Users, 
-  CreditCard, 
-  CheckCircle, 
-  XCircle, 
   Hash,
-  AlertTriangle // Onay ikonu için eklendi
+  AlertTriangle,
+  Search,
+  Calendar
 } from 'lucide-react';
 
-// Admin stillerini yeniden kullanıyoruz
+// Admin stillerini yeniden kullanıyoruz (Tutarlılık için)
 import styles from '../Admin/CoachManagement/CoachManagement.module.css'; 
 import formStyles from '../../components/Form/Form.module.css'; 
 
-// Koç'un AuthContext'i
 import { useAuth } from '../../context/AuthContext'; 
-import { getDocsWithCount } from '../../firebase/firestoreService';
 import { db } from '../../firebase/firebaseConfig';
-// GÜNCELLEME: 'orderBy' ve 'query' eklendi
 import { collection, query, Timestamp, getDocs, orderBy } from 'firebase/firestore'; 
 
 import CoachAddNewMemberModal from './CoachAddNewMemberModal'; 
-import Modal from '../../components/Modal/Modal'; 
 
-// --- Veri Tipleri ---
+// --- Tipler ---
 type PaymentStatusSummary = 'Paid' | 'Partial Payment' | 'Unpaid' | 'No Packages';
 
-// GÜNCELLEME: MemberData tipi
 interface MemberData {
   id: string;
   name: string;
@@ -40,29 +34,18 @@ interface MemberData {
   totalPackages: number;
   currentSessionCount: number;
   paymentStatusSummary: PaymentStatusSummary;
-  latestApprovalStatus: 'Pending' | 'Approved' | null; // YENİ: Onay durumu
+  latestApprovalStatus: 'Pending' | 'Approved' | null;
 }
 interface PackageData {
   id: string;
   paymentStatus: 'Paid' | 'Pending';
-  approvalStatus?: 'Pending' | 'Approved'; // YENİ
-  packageNumber?: number; // YENİ
+  approvalStatus?: 'Pending' | 'Approved'; 
+  packageNumber?: number;
 }
-// -----------------------------
 
-// --- Yardımcı Fonksiyonlar (Değişiklik yok) ---
-const formatDate = (date: Date | null): string => {
-  if (!date) return '---';
-  return new Intl.DateTimeFormat('tr-TR', {
-    day: '2-digit',
-    month: '2-digit',
-  }).format(date);
-};
-
+// --- Yardımcı Fonksiyonlar ---
 const calculateRemainingDays = (endDate: Date | null): { text: string; isExpired: boolean } => {
-  if (!endDate) { 
-    return { text: 'Paket Yok', isExpired: true };
-  }
+  if (!endDate) return { text: 'Paket Yok', isExpired: true };
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endDateStart = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
@@ -70,50 +53,34 @@ const calculateRemainingDays = (endDate: Date | null): { text: string; isExpired
   const diffTime = endDateStart.getTime() - todayStart.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) {
-    return { text: 'Süresi Doldu', isExpired: true };
-  }
-  if (diffDays === 0) {
-    return { text: 'Bugün Son Gün', isExpired: false };
-  }
+  if (diffDays < 0) return { text: 'Süresi Doldu', isExpired: true };
+  if (diffDays === 0) return { text: 'Bugün Son Gün', isExpired: false };
   return { text: `${diffDays} gün kaldı`, isExpired: false };
 };
 
-const calculateProgressPercentage = (startDate: Date | null, endDate: Date | null): number => {
-  if (!startDate || !endDate) return 0;
-  const now = new Date();
-  const start = startDate.getTime();
-  const end = endDate.getTime();
-  const today = now.getTime();
-
-  if (today < start) return 0;
-  if (today >= end) return 100; 
-  
-  const totalDuration = end - start;
-  const elapsedTime = today - start;
-
-  if (totalDuration <= 0) return 100;
-  const progress = (elapsedTime / totalDuration) * 100;
-  return Math.min(100, Math.max(0, progress));
+// YENİ EKLENDİ: Rozet renkleri için yardımcı fonksiyon
+const getPaymentStatusBadge = (status: PaymentStatusSummary) => {
+    switch (status) {
+      case 'Paid': return { text: 'Ödendi', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+      case 'Partial Payment': return { text: 'Eksik', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
+      case 'Unpaid': return { text: 'Ödenmedi', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+      default: return { text: 'Paket Yok', color: '#666', bg: 'rgba(255,255,255,0.05)' };
+    }
 };
-// -----------------------------
-
 
 const CoachMembersPage: React.FC = () => {
   const { currentUser } = useAuth();
   const coachId = currentUser?.username;
-  
   const navigate = useNavigate();
 
-  const [members, setMembers] = React.useState<MemberData[]>([]); 
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [members, setMembers] = useState<MemberData[]>([]); 
+  const [filteredMembers, setFilteredMembers] = useState<MemberData[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [isAddNewMemberOpen, setIsAddNewMemberOpen] = useState(false);
-  const [tempMemberId, setTempMemberId] = useState('');
   
-  
-  // === GÜNCELLEME: fetchCoachMembers (Onay Durumunu Kontrol Eder) ===
   const fetchCoachMembers = useCallback(async () => {
     if (!coachId) {
       setError("Koç ID'si bulunamadı.");
@@ -130,6 +97,7 @@ const CoachMembersPage: React.FC = () => {
 
       if (querySnapshot.empty) {
         setMembers([]);
+        setFilteredMembers([]);
         setIsLoading(false);
         return;
       }
@@ -137,7 +105,7 @@ const CoachMembersPage: React.FC = () => {
       const memberDataPromises = querySnapshot.docs.map(async (memberDoc) => {
         const member = memberDoc.data();
         
-        // GÜNCELLEME: Paketleri 'packageNumber'a göre sırala
+        // Paketleri çek
         const packagesColRef = collection(memberDoc.ref, 'packages'); 
         const pkgQuery = query(packagesColRef, orderBy('packageNumber', 'desc'));
         const packagesSnapshot = await getDocs(pkgQuery);
@@ -153,44 +121,32 @@ const CoachMembersPage: React.FC = () => {
         }));
 
         if (memberPackages.length > 0) {
-          // 1. En son paketin onay durumunu al
-          latestApprovalStatus = memberPackages[0].approvalStatus || 'Approved'; // Eskiler için 'Approved' varsay
-
-          // 2. Ödeme durumunu hesapla (Değişiklik yok)
+          latestApprovalStatus = memberPackages[0].approvalStatus || 'Approved'; 
           const unpaidPackages = memberPackages.filter(p => p.paymentStatus === 'Pending');
-          if (unpaidPackages.length === 0) {
-            paymentStatusSummary = 'Paid'; 
-          } else if (unpaidPackages.length === memberPackages.length) {
-            paymentStatusSummary = 'Unpaid';
-          } else {
-            paymentStatusSummary = 'Partial Payment';
-          }
+          if (unpaidPackages.length === 0) paymentStatusSummary = 'Paid'; 
+          else if (unpaidPackages.length === memberPackages.length) paymentStatusSummary = 'Unpaid';
+          else paymentStatusSummary = 'Partial Payment';
         }
-        
-        let packageStartDate: Date | null = member.packageStartDate instanceof Timestamp ? member.packageStartDate.toDate() : null;
-        let packageEndDate: Date | null = member.packageEndDate instanceof Timestamp ? member.packageEndDate.toDate() : null;
         
         return {
           id: memberDoc.id,
           name: member.name || "İsimsiz Üye",
-          packageStartDate: packageStartDate,
-          packageEndDate: packageEndDate,
+          packageStartDate: member.packageStartDate instanceof Timestamp ? member.packageStartDate.toDate() : null,
+          packageEndDate: member.packageEndDate instanceof Timestamp ? member.packageEndDate.toDate() : null,
           totalPackages: member.totalPackages || memberPackages.length,
           currentSessionCount: member.currentSessionCount || 0,
           paymentStatusSummary: paymentStatusSummary,
-          latestApprovalStatus: latestApprovalStatus // YENİ
+          latestApprovalStatus: latestApprovalStatus
         } as MemberData;
       });
 
       const resolvedMembers = await Promise.all(memberDataPromises);
       
-      // Listeyi sırala (Değişiklik yok)
+      // Sıralama
       resolvedMembers.sort((a, b) => {
-          // YENİ: Onay bekleyenler en üste gelsin
           if (a.latestApprovalStatus === 'Pending' && b.latestApprovalStatus !== 'Pending') return -1;
           if (a.latestApprovalStatus !== 'Pending' && b.latestApprovalStatus === 'Pending') return 1;
 
-          // Sonra aktif olanlar
           const aActive = a.packageEndDate && a.packageEndDate.getTime() > Date.now();
           const bActive = b.packageEndDate && b.packageEndDate.getTime() > Date.now();
           if (aActive && !bActive) return -1;
@@ -202,10 +158,11 @@ const CoachMembersPage: React.FC = () => {
       });
       
       setMembers(resolvedMembers);
+      setFilteredMembers(resolvedMembers);
       
     } catch (err: any) {
-      console.error("Üyeler çekilirken bir hata oluştu:", err);
-      setError("Üyeler listesi çekilemedi: " + err.message);
+      console.error(err);
+      setError("Üyeler listesi yüklenemedi.");
     } finally {
       setIsLoading(false);
     }
@@ -215,42 +172,24 @@ const CoachMembersPage: React.FC = () => {
     fetchCoachMembers();
   }, [fetchCoachMembers]);
 
-  // handleMemberClick (Değişiklik yok)
+  // Arama İşlemi
+  useEffect(() => {
+      if(!searchTerm) {
+          setFilteredMembers(members);
+      } else {
+          const lower = searchTerm.toLowerCase();
+          setFilteredMembers(members.filter(m => m.name.toLowerCase().includes(lower)));
+      }
+  }, [searchTerm, members]);
+
   const handleMemberClick = (memberId: string) => {
     navigate(`/coach/members/${memberId}`);
   };
 
-  // Yeni üye modalı (Değişiklik yok)
-  const handleAddNewMember = () => {
-    const newId = `new-${Date.now()}`; 
-    setTempMemberId(newId);
-    setIsAddNewMemberOpen(true);
-  };
   const handleModalSuccess = () => {
     setIsAddNewMemberOpen(false);
     fetchCoachMembers(); 
   };
-  const handleModalClose = () => {
-    setIsAddNewMemberOpen(false);
-    setTempMemberId('');
-  };
-
-  // renderPaymentStatus (Değişiklik yok)
-  const renderPaymentStatus = (status: PaymentStatusSummary) => {
-    switch (status) {
-      case 'Paid':
-        return <span className={`${styles.paymentStatus} ${styles.paid}`}><CheckCircle size={14} /> Tümü Ödendi</span>;
-      case 'Partial Payment':
-        return <span className={`${styles.paymentStatus} ${styles.partial}`}><AlertTriangle size={14} /> Eksik Ödeme</span>;
-      case 'Unpaid':
-        return <span className={`${styles.paymentStatus} ${styles.unpaid}`}><XCircle size={14} /> Ödenmedi</span>;
-      case 'No Packages':
-        return <span className={`${styles.paymentStatus} ${styles.noPackage}`}><CreditCard size={14} /> Paket Yok</span>;
-      default:
-        return null;
-    }
-  };
-
 
   return (
     <>
@@ -258,110 +197,119 @@ const CoachMembersPage: React.FC = () => {
         
         <h1 className={formStyles.pageTitle}>Üyelerim</h1>
         
-        <div className={styles.listContainer} style={{marginTop: '1.5rem'}}>
+        <div className={styles.listContainer} style={{marginTop: '1.5rem', background: 'transparent', border:'none', padding:0}}>
           
-          <div className={styles.listHeader}>
-            <h2 className={styles.listTitle}>Tüm Üyeler ({members.length})</h2>
-            <button className={styles.addButton} onClick={handleAddNewMember}>
+          <div className={styles.listHeader} style={{marginBottom:'1.5rem'}}>
+            <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                <h2 className={styles.listTitle}>Tüm Üyeler ({filteredMembers.length})</h2>
+                
+                {/* Arama Kutusu */}
+                <div style={{position:'relative'}}>
+                    <Search size={16} style={{position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', color:'#666'}}/>
+                    <input 
+                        type="text" 
+                        placeholder="Üye ara..." 
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        style={{
+                            background: '#0a0a0a', border: '1px solid #333', borderRadius: '6px',
+                            padding: '0.4rem 0.8rem 0.4rem 2.2rem', color: '#fff', fontSize: '0.9rem', outline: 'none', width:'200px'
+                        }}
+                    />
+                </div>
+            </div>
+            
+            <button className={styles.addButton} onClick={() => setIsAddNewMemberOpen(true)}>
               <Plus size={18} />
               <span>Yeni Üye Ekle</span>
             </button>
           </div>
 
-          <div className={styles.listContent}>
+          {/* GÜNCELLEME: styles.listContent YERİNE styles.coachGrid KULLANIYORUZ */}
+          <div className={styles.coachGrid}> 
             
-            {/* Yükleme, Hata, Boş durumları (Değişiklik yok) */}
             {isLoading && (
-              <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center', gridColumn: '1/-1' }}>
                 <Loader2 size={24} className={formStyles.spinner} />
               </div>
             )}
+            
             {error && (
-              <div className={formStyles.error} style={{ margin: '1rem' }}>{error}</div>
+              <div className={formStyles.error} style={{ margin: '1rem', gridColumn: '1/-1' }}>{error}</div>
             )}
+            
             {!isLoading && !error && members.length === 0 && (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
-                Henüz hiç üyeniz bulunmuyor. "Yeni Üye Ekle" butonu ile başlayın.
+              <div style={{ padding: '3rem', textAlign: 'center', color: '#888', gridColumn: '1/-1', border:'1px dashed #333', borderRadius:'12px' }}>
+                <Users size={48} style={{marginBottom:'1rem', opacity:0.5}}/>
+                <p>Henüz hiç üyeniz bulunmuyor.</p>
+                <p style={{fontSize:'0.9rem'}}>Sağ üstteki buton ile ilk üyenizi ekleyebilirsiniz.</p>
               </div>
             )}
 
-            {/* === GÜNCELLEME: JSX (Liste) === */}
-            {!isLoading && !error && members.map((member) => {
+            {!isLoading && !error && filteredMembers.map((member) => {
               const packageStatus = calculateRemainingDays(member.packageEndDate);
-              const progressPercent = calculateProgressPercentage(
-                member.packageStartDate, 
-                member.packageEndDate
-              );
-              
-              // Onay bekleyenler için özel sınıf
               const isPending = member.latestApprovalStatus === 'Pending';
+              const payStatus = getPaymentStatusBadge(member.paymentStatusSummary);
 
               return (
                 <div 
                   key={member.id} 
-                  className={`
-                    ${styles.coachItem} 
-                    ${styles.memberItemClickable}
-                    ${packageStatus.isExpired && !isPending ? styles.isExpiredMember : ''}
-                    ${isPending ? styles.isPendingMember : ''} {/* YENİ: Onay bekleyenleri vurgula */}
-                  `} 
+                  // GÜNCELLEME: styles.coachItem yerine styles.coachCard kullanıyoruz (Kutu görünümü için)
+                  className={styles.coachCard}
                   onClick={() => handleMemberClick(member.id)}
+                  style={{cursor: 'pointer'}}
                 >
                   
-                  <div className={styles.coachInfo}>
-                    <div className={styles.coachDetails}>
-                      <span className={styles.coachName}>{member.name}</span>
-                      
-                      {/* GÜNCELLEME: coachStats (Onay durumuna göre) */}
-                      <div className={styles.coachStats}>
-                        {isPending ? (
-                          // 1. Onay Bekliyorsa
-                          <span className={`${styles.paymentStatus} ${styles.partial}`}>
-                            <AlertTriangle size={14} /> Admin Onayı Bekleniyor
-                          </span>
-                        ) : (
-                          // 2. Onaylanmışsa (Normal görünüm)
-                          <>
-                            <span>
-                              <Users size={14} />
-                              {member.totalPackages || 0} Paket
-                            </span>
-                            <span>
-                              <Hash size={14} />
-                              {member.currentSessionCount} Seans Kaldı
-                            </span>
-                            {renderPaymentStatus(member.paymentStatusSummary)}
-                          </>
-                        )}
-                      </div>
+                  {/* 1. KART BAŞLIĞI (Header) */}
+                  <div className={styles.cardHeader} style={{marginBottom: '1rem'}}>
+                    <div className={styles.coachIdentity}>
+                        <div className={styles.avatar} style={{width: '42px', height: '42px', fontSize: '1rem'}}>
+                            {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className={styles.coachInfo}>
+                            <span className={styles.coachName} style={{fontSize: '1rem'}}>{member.name}</span>
+                            
+                            {/* Rozet: Ödeme veya Onay Durumu */}
+                            {isPending ? (
+                                <span style={{
+                                    fontSize:'0.7rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)',
+                                    padding: '1px 6px', borderRadius: '4px', fontWeight: 600, width: 'fit-content'
+                                }}>
+                                    Onay Bekliyor
+                                </span>
+                            ) : (
+                                <span style={{
+                                    fontSize:'0.7rem', color: payStatus.color, background: payStatus.bg,
+                                    padding: '1px 6px', borderRadius: '4px', fontWeight: 600, width: 'fit-content'
+                                }}>
+                                    {payStatus.text}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* 2. İSTATİSTİKLER (Stats) */}
+                  <div className={styles.cardStats} style={{gridTemplateColumns: '1fr 1fr'}}>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}><Hash size={12}/> Kalan Seans</span>
+                        <span className={styles.statValue} style={{color: member.currentSessionCount < 3 ? '#ef4444' : 'var(--text-main)'}}>
+                            {member.currentSessionCount}
+                        </span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span className={styles.statLabel}><Calendar size={12}/> Süre</span>
+                        <span className={styles.statValue} style={{fontSize: '0.9rem', color: packageStatus.isExpired ? '#666' : 'var(--primary-color)'}}>
+                            {packageStatus.text}
+                        </span>
                     </div>
                   </div>
                   
-                  {/* GÜNCELLEME: Sağ Taraf (Onay durumuna göre) */}
-                  <div className={styles.coachActions}>
-                    {isPending ? (
-                      // 1. Onay Bekliyorsa (Progress bar yerine metin)
-                      <span className={styles.remainingDays} style={{color: '#f59e0b'}}> 
-                        Onayda
-                      </span>
-                    ) : (
-                      // 2. Onaylanmışsa (Normal progress bar)
-                      <div className={styles.memberPackageProgress}>
-                        <div className={styles.progressBarContainer}>
-                          <div 
-                            className={styles.progressBarFill}
-                            style={{ width: `${progressPercent}%`, 
-                                     backgroundColor: packageStatus.isExpired ? '#444' : undefined 
-                                  }}
-                          />
-                        </div>
-                        <span className={styles.remainingDays}>
-                          {packageStatus.text}
-                        </span>
-                      </div>
-                    )}
-
-                    <ChevronRight size={20} className={styles.chevronIcon} />
+                  {/* 3. AKSİYON / ALT KISIM (Footer) */}
+                  <div className={styles.cardActions} style={{marginTop: 'auto', display: 'flex', justifyContent: 'flex-end'}}>
+                     <span style={{fontSize: '0.75rem', color: '#666', display: 'flex', alignItems: 'center'}}>
+                        Detaylar <ChevronRight size={14} style={{marginLeft: 2}}/>
+                     </span>
                   </div>
 
                 </div>
@@ -371,15 +319,11 @@ const CoachMembersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* --- MODALLAR (Değişiklik yok) --- */}
-      
       <CoachAddNewMemberModal 
         isOpen={isAddNewMemberOpen}
-        memberId={tempMemberId}
-        onClose={handleModalClose}
+        onClose={() => setIsAddNewMemberOpen(false)}
         onSuccess={handleModalSuccess}
       /> 
-      
     </>
   );
 };
