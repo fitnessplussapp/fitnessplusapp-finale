@@ -1,130 +1,86 @@
-// src/context/AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { onSnapshot, doc } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+import type { CoachData } from '../types/db'; // YENİ TİP
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { DocumentData } from 'firebase/firestore';
-
-// YENİ: Gerçek zamanlı dinleyici için importlar
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig'; // db importu
-
-// Kullanıcı verisinin tipini tanımlayalım
-interface AuthUser extends DocumentData {
+// Admin tipi şimdilik basit kalsın, ileride db.ts'e ekleyebiliriz
+interface AdminData {
   username: string;
-  role: 'admin' | 'coach';
+  role: 'admin';
 }
 
-// Context'in tipini tanımlayalım
+type AuthUser = CoachData | AdminData;
+
 interface AuthContextType {
   currentUser: AuthUser | null;
-  loading: boolean; // YENİ: Yüklenme durumu eklendi
-  login: (userData: DocumentData) => void;
+  loading: boolean;
+  login: (userData: AuthUser) => void;
   logout: () => void;
 }
 
-// 1. Context'i oluştur
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 2. 'custom hook' (Değişiklik yok)
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth, AuthProvider içinde kullanılmalıdır');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
 
-// 3. Provider (Sağlayıcı) bileşeni
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
-    const storedUser = sessionStorage.getItem('fitness-user');
-    return storedUser ? JSON.parse(storedUser) : null;
+    const stored = sessionStorage.getItem('fitness-user');
+    return stored ? JSON.parse(stored) : null;
   });
+  const [loading, setLoading] = useState(false); // Başlangıçta false, user varsa true olur
 
-  // YENİ: Yüklenme state'i (ProtectedRoute'da kullanılacak)
-  // 'true' başlar, böylece ilk kontrol bitene kadar korumalı sayfalar açılmaz
-  const [loading, setLoading] = useState(true);
-
-  // Giriş yapma fonksiyonu
-  const login = (userData: DocumentData) => {
-    const userToStore: AuthUser = {
-      username: userData.username,
-      role: userData.role
-    };
-    sessionStorage.setItem('fitness-user', JSON.stringify(userToStore));
-    setCurrentUser(userToStore);
-    setLoading(false); // Giriş yapıldı, yükleme bitti
+  const login = (userData: AuthUser) => {
+    sessionStorage.setItem('fitness-user', JSON.stringify(userData));
+    setCurrentUser(userData);
   };
 
-  // Çıkış yapma fonksiyonu
   const logout = () => {
     sessionStorage.removeItem('fitness-user');
     setCurrentUser(null);
-    setLoading(false); // Çıkış yapıldı, yükleme bitti
   };
 
-  // === YENİ: Gerçek Zamanlı 'isActive' Kontrolü ===
+  // GERÇEK ZAMANLI DİNLEME (Listener)
   useEffect(() => {
-    // Bu 'unsubscribe' fonksiyonu, dinleyiciyi kapatmak için kullanılacak
-    let unsubscribe: (() => void) | undefined = undefined;
+    if (!currentUser) return;
 
-    if (currentUser) {
-      // Eğer bir kullanıcı giriş yapmışsa, durumunu dinlemeye başla
-      setLoading(true); // Kontrol başlarken yüklemeyi aç
-      
-      const collectionName = currentUser.role === 'admin' ? 'admins' : 'coaches';
-      const userDocRef = doc(db, collectionName, currentUser.username);
+    setLoading(true);
+    const collectionName = currentUser.role === 'admin' ? 'admins' : 'coaches';
+    // DİKKAT: CoachData id'si username veya auth uid olabilir. Yapınıza göre ayarlayın.
+    // Şimdilik username varsayıyoruz.
+    const userRef = doc(db, collectionName, (currentUser as any).username || currentUser.id);
 
-      unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        
-        // 1. Kullanıcı veritabanından silindiyse VEYA
-        // 2. 'isActive' durumu 'false' (Boolean) VEYA "false" (String) ise
-        if (
-          !docSnap.exists() || 
-          docSnap.data()?.isActive === false || 
-          docSnap.data()?.isActive === "false"
-        ) {
-          // KULLANICIYI ANINDA SİSTEMDEN AT
-          
-          // Login sayfasına mesaj göndermek için
-          sessionStorage.setItem('logout_reason', 'Hesabınız donduruldu, çıkış yapıldı.');
-          
-          logout(); // Bu, currentUser'ı null yapar ve dinleyiciyi durdurur
-          
+    const unsub = onSnapshot(userRef, (docSnap) => {
+      setLoading(false);
+      if (!docSnap.exists()) {
+        logout(); // Kullanıcı silindiyse at
+      } else {
+        const data = docSnap.data();
+        // Aktiflik kontrolü
+        if (data?.isActive === false) {
+          alert("Hesabınız pasif duruma alındı.");
+          logout();
         } else {
-          // Kullanıcı var ve aktif, yüklemeyi bitir
-          setLoading(false);
+          // Veri güncellendiyse (örn: bakiye değişti) state'i güncelle
+          // Sonsuz döngüyü engellemek için sadece veri değiştiyse set et
+          // (Burada basitlik için direkt set ediyoruz, production'da deep compare önerilir)
+          setCurrentUser(prev => ({ ...prev, ...data } as AuthUser));
         }
-      }, (error) => {
-        // Dinlerken bir hata oluşursa (örn: izinler)
-        console.error("Kullanıcı durumu dinlenemedi (onSnapshot):", error);
-        logout();
-      });
-
-    } else {
-      // Giriş yapmış bir kullanıcı yok
-      setLoading(false); // Yükleme durumunu kapat
-    }
-
-    // Cleanup fonksiyonu:
-    // Bu effect bittiğinde (örn: kullanıcı logout olduğunda)
-    // Firestore dinleyicisini kapatır, maliyeti ve hafıza sızıntısını önler.
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
       }
-    };
-  }, [currentUser]); // Bu effect, SADECE 'currentUser' değiştiğinde (giriş/çıkış) çalışır
+    }, (err) => {
+      console.error("Auth Listener Error:", err);
+      setLoading(false);
+    });
 
-  const value = {
-    currentUser,
-    loading, // 'ProtectedRoute'un ihtiyacı var
-    login,
-    logout,
-  };
+    return () => unsub();
+  }, [currentUser?.role, (currentUser as any)?.username]); // Sadece user kimliği değişince çalış
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ currentUser, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -1,18 +1,11 @@
-// src/pages/Admin/CoachManagement/AddCoach.tsx
-
-import React, { useState, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, Loader2, Layers, Check } from 'lucide-react'; 
+import React, { useState } from 'react';
+import { User, Layers, Percent } from 'lucide-react'; 
 import Modal from '../../../components/Modal/Modal';
-import { isValidInput } from '../../../utils/securityUtils';
 import formStyles from '../../../components/Form/Form.module.css';
 
-import { db } from '../../../firebase/firebaseConfig';
-import { doc } from 'firebase/firestore';
-
-// Fonksiyonlar normal import
-import { setDocWithCount, getDocWithCount, getSystemDefinitions } from '../../../firebase/firestoreService';
-// Type'lar "import type" ile
-import type { SystemDefinition } from '../../../firebase/firestoreService';
+// YENİ SERVİS VE TİPLER
+import { dbService } from '../../../services/DatabaseService';
+import type { CoachProfile } from '../../../types/schema';
 
 interface AddCoachProps {
   isOpen: boolean;
@@ -21,216 +14,126 @@ interface AddCoachProps {
 }
 
 const AddCoach: React.FC<AddCoachProps> = ({ isOpen, onClose, onCoachAdded }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  // Form State
+  const [username, setUsername] = useState(''); // ID olarak kullanılacak
+  const [fullName, setFullName] = useState('');
+  const [branch, setBranch] = useState('Merkez');
+  const [commission, setCommission] = useState<number>(40); // %40 Varsayılan
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Dinamik Alanlar State'i (Artık Array tutuyor)
-  const [definitions, setDefinitions] = useState<SystemDefinition[]>([]);
-  const [dynamicValues, setDynamicValues] = useState<{ [key: string]: string[] }>({});
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  // Modal açıldığında tanımları çek
-  useEffect(() => {
-    if (isOpen) {
-      const fetchDefs = async () => {
-        try {
-          const allDefs = await getSystemDefinitions();
-          // Sadece hedefinde 'coach' olanları filtrele
-          const coachDefs = allDefs.filter(d => d.targets && d.targets.includes('coach'));
-          setDefinitions(coachDefs);
-        } catch (err) {
-          console.error("Sistem tanımları çekilemedi:", err);
-        }
+    try {
+      // v3.0 Veri Yapısına Uygun Obje
+      const newCoachData: Omit<CoachProfile, 'createdAt' | 'metrics'> = {
+        id: username.toLowerCase().trim(),
+        email: `${username}@fitnessplus.com`, // Otomatik mail (örnek)
+        fullName: fullName.trim(),
+        specialties: [], // İleride eklenebilir
+        branchId: branch,
+        commissionRate: commission / 100, // Yüzdeyi ondalığa çevir (0.40)
+        commissionModel: 'PERCENTAGE'
       };
-      fetchDefs();
+
+      await dbService.createCoach(newCoachData);
+      
+      onCoachAdded();
+      handleClose();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Bir hata oluştu.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen]);
+  };
 
   const handleClose = () => {
     setUsername('');
-    setPassword('');
-    setDynamicValues({}); // Reset
+    setFullName('');
+    setCommission(40);
     setError('');
-    setShowPassword(false);
     onClose();
   };
 
-  // --- ÇOKLU SEÇİM MANTIĞI ---
-  const toggleDynamicValue = (defId: string, itemValue: string) => {
-    setDynamicValues(prev => {
-      const currentList = prev[defId] || [];
-      if (currentList.includes(itemValue)) {
-        // Varsa çıkar
-        return { ...prev, [defId]: currentList.filter(i => i !== itemValue) };
-      } else {
-        // Yoksa ekle
-        return { ...prev, [defId]: [...currentList, itemValue] };
-      }
-    });
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!isValidInput(username) || !isValidInput(password)) {
-      setError('Geçersiz karakterler kullanıldı. ($ { } [ ] )');
-      return;
-    }
-
-    setIsLoading(true);
-    const coachId = username.toLowerCase();
-
-    try {
-      const coachRef = doc(db, 'coaches', coachId);
-      const docSnap = await getDocWithCount(coachRef);
-
-      if (docSnap.exists()) {
-        setError('Bu kullanıcı adı (ID) zaten alınmış. Lütfen başka bir ID deneyin.');
-        setIsLoading(false);
-        return;
-      }
-
-      const newCoachData = {
-        username: coachId,
-        password: password, 
-        isActive: true,
-        totalEarnings: 0,
-        companyCut: 0,
-        totalMembers: 0,
-        role: 'coach',
-        // Dinamik alanları kaydet (Array olarak kaydedilecek)
-        customFields: dynamicValues 
-      };
-
-      await setDocWithCount(coachRef, newCoachData);
-      
-      setIsLoading(false);
-      onCoachAdded(); 
-      handleClose();  
-
-    } catch (err: any) {
-      console.error("Koç oluşturulamadı:", err);
-      if (err.code === 'permission-denied') {
-          setError('Koç ekleme yetkiniz yok. (Firestore Kural Hatası)');
-      } else {
-          setError('Koç oluşturulurken bir hata oluştu: ' + err.message);
-      }
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Koç Ekle">
-      <form className={formStyles.form} onSubmit={handleFormSubmit}>
+    <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Profesyonel Koç Ekle">
+      <form className={formStyles.form} onSubmit={handleSubmit}>
         {error && <div className={formStyles.error}>{error}</div>}
 
-        {/* Kullanıcı Adı */}
         <div className={formStyles.inputGroup}>
-          <label htmlFor="username">Koç Kullanıcı Adı (Giriş ID)</label>
+          <label>Kullanıcı ID (Giriş İçin)</label>
           <div className={formStyles.inputWrapper}>
             <User size={18} className={formStyles.inputIcon} />
             <input
-              id="username"
               type="text"
-              placeholder="Örn: ozgur (Bu ID değiştirilemez)"
+              placeholder="ahmet.yilmaz"
               className={formStyles.input}
               value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())} 
-              disabled={isLoading}
+              onChange={e => setUsername(e.target.value)}
               required
             />
           </div>
         </div>
 
-        {/* Şifre */}
         <div className={formStyles.inputGroup}>
-          <label htmlFor="password">Şifre</label>
+          <label>Ad Soyad</label>
           <div className={formStyles.inputWrapper}>
-            <Lock size={18} className={formStyles.inputIcon} />
+            <User size={18} className={formStyles.inputIcon} />
             <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Koç için bir şifre belirleyin"
+              type="text"
+              placeholder="Ahmet Yılmaz"
               className={formStyles.input}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
               required
             />
-            <button
-              type="button"
-              className={formStyles.passwordIcon}
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
         </div>
 
-        {/* --- YENİ: ÇOKLU SEÇİMLİ DİNAMİK ALANLAR --- */}
-        {definitions.length > 0 && (
-          <div style={{ marginTop: '1.5rem', borderTop: '1px solid #333', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '0.95rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Layers size={16} /> Ek Bilgiler (Çoklu Seçim)
-            </h4>
-            
-            {definitions.map(def => (
-              <div key={def.id} className={formStyles.inputGroup}>
-                <label style={{marginBottom: '0.5rem', color: '#AAA', fontSize: '0.85rem'}}>{def.title}</label>
-                
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {def.items.length > 0 ? (
-                    def.items.map((item, idx) => {
-                      const isSelected = dynamicValues[def.id]?.includes(item);
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleDynamicValue(def.id, item)}
-                          style={{
-                            background: isSelected ? 'rgba(212, 175, 55, 0.15)' : '#1A1A1A',
-                            border: isSelected ? '1px solid #D4AF37' : '1px solid #333',
-                            color: isSelected ? '#D4AF37' : '#888',
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          {isSelected && <Check size={14} />}
-                          {item}
-                        </button>
-                      )
-                    })
-                  ) : (
-                    <span style={{fontSize: '0.8rem', color: '#555', fontStyle: 'italic'}}>Seçenek yok.</span>
-                  )}
-                </div>
-              </div>
-            ))}
+        <div className={formStyles.inputGroup}>
+          <label>Şube</label>
+          <div className={formStyles.inputWrapper}>
+            <Layers size={18} className={formStyles.inputIcon} />
+            <select 
+                className={formStyles.input} 
+                value={branch} 
+                onChange={e => setBranch(e.target.value)}
+            >
+                <option value="Merkez">Merkez Şube</option>
+                <option value="Alsancak">Alsancak</option>
+                <option value="Bostanlı">Bostanlı</option>
+            </select>
           </div>
-        )}
-        {/* ----------------------------- */}
-        
-        <button 
-          type="submit" 
-          className={formStyles.submitButton}
-          disabled={isLoading}
-          style={{marginTop: '1.5rem'}}
-        >
-          {isLoading ? (
-            <Loader2 size={20} className={formStyles.spinner} />
-          ) : (
-            'Koçu Oluştur'
-          )}
-        </button>
+        </div>
+
+        <div className={formStyles.inputGroup}>
+          <label>Hakediş Oranı (%)</label>
+          <div className={formStyles.inputWrapper}>
+            <Percent size={18} className={formStyles.inputIcon} />
+            <input
+              type="number"
+              min="0" max="100"
+              className={formStyles.input}
+              value={commission}
+              onChange={e => setCommission(Number(e.target.value))}
+              required
+            />
+          </div>
+          <small style={{color:'#666'}}>Ders başına alacağı pay yüzdesi (Örn: %40)</small>
+        </div>
+
+        <div className={formStyles.formActions}>
+            <button type="button" onClick={handleClose} className={`${formStyles.submitButton} ${formStyles.secondary}`}>İptal</button>
+            <button type="submit" disabled={isLoading} className={`${formStyles.submitButton} ${formStyles.primary}`}>
+                {isLoading ? <Loader2 size={18} className="spin" /> : 'Oluştur'}
+            </button>
+        </div>
+
       </form>
     </Modal>
   );
