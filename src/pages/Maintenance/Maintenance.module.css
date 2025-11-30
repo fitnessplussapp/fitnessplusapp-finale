@@ -1,0 +1,182 @@
+/* src/pages/Maintenance/Maintenance.module.css */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #050505;
+  color: #e0e0e0;
+  font-family: 'Poppins', sans-serif;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(129, 201, 189, 0.03) 0%, rgba(0,0,0,0) 70%);
+  animation: pulseBg 10s infinite alternate;
+}
+
+@keyframes pulseBg {
+  from { transform: scale(1); opacity: 0.5; }
+  to { transform: scale(1.2); opacity: 0.8; }
+}
+
+.contentWrapper {
+  z-index: 10;
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header {
+  text-align: center;
+}
+
+.logoIcon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 15px rgba(129, 201, 189, 0.3));
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(90deg, #fff, #81C9BD);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  color: #888;
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.statusCard {
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 12px;
+  width: 100%;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #222;
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #81C9BD;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  background-color: #81C9BD;
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(129, 201, 189, 0.4);
+  animation: pulseGreen 2s infinite;
+}
+
+@keyframes pulseGreen {
+  0% { box-shadow: 0 0 0 0 rgba(129, 201, 189, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(129, 201, 189, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(129, 201, 189, 0); }
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.taskItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.taskItem.active {
+  border-color: rgba(129, 201, 189, 0.3);
+  background-color: rgba(129, 201, 189, 0.05);
+}
+
+.taskName {
+  font-size: 0.9rem;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusCompleted {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.statusProgress {
+  color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusPending {
+  color: #555;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.footer {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  color: #555;
+}

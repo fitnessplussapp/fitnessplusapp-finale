@@ -16,7 +16,7 @@ import Settings from './pages/Admin/Settings/Settings';
 import Approvals from './pages/Admin/Approvals/Approvals';
 import WeeklySchedule from './pages/Admin/CoachManagement/schedule/WeeklySchedule';
 
-// YENİ: Maaş Hesaplama Sayfası Importu
+// Maaş Hesaplama Sayfası Importu
 import CoachPayments from './pages/Admin/CoachManagement/Payments/CoachPayments';
 
 // === KOÇ SAYFALARI ===
@@ -25,8 +25,22 @@ import CoachMembersPage from './pages/Coach/CoachMembersPage';
 import CoachSchedulePage from './pages/Coach/CoachSchedulePage';
 import CoachMemberDetails from './pages/Coach/CoachMemberDetails'; 
 
+// === BAKIM SAYFASI ===
+import MaintenancePage from './pages/Maintenance/Maintenance';
+
+// ************************************************************
+// BAKIM MODU AYARI
+// Sistemi bakıma almak için bu değeri 'true' yapın.
+// ************************************************************
+const IS_MAINTENANCE_MODE = true; 
+
 
 const App: React.FC = () => {
+
+  // Eğer bakım modu aktifse, diğer hiçbir rotayı yükleme, direkt bakım sayfasını göster.
+  if (IS_MAINTENANCE_MODE) {
+    return <MaintenancePage />;
+  }
 
   return (
     <BrowserRouter>
@@ -52,7 +66,7 @@ const App: React.FC = () => {
             element={<WeeklySchedule />}
           />
           
-          {/* YENİ: Maaş Hesaplama Rotası */}
+          {/* Maaş Hesaplama Rotası */}
           <Route path="/admin/payments" element={<CoachPayments />} />
           
           <Route path="/admin/approvals" element={<Approvals />} />
